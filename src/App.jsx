@@ -350,9 +350,9 @@ export default function App() {
   const goToSettingsTab = useCallback(() => setActiveTab('settings'), []);
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-[#0F172A] font-sans">
-      <div className="w-full max-w-[390px] h-[844px] bg-[#1A1A2E] text-white flex flex-col relative overflow-hidden shadow-2xl rounded-[40px] border-[8px] border-black">
-        <div className="flex-1 overflow-y-auto overscroll-contain pb-24 scrollbar-hide">
+    <div className="flex justify-center items-start min-h-screen bg-[#0F172A] font-sans">
+      <div className="w-full max-w-[390px] min-h-screen h-[100dvh] bg-[#1A1A2E] text-white flex flex-col relative overflow-hidden shadow-2xl rounded-[40px] border-[8px] border-black">
+        <div className="flex-1 overflow-y-auto overscroll-contain pb-32 scrollbar-hide">
           {showCelebration ? (
             <CelebrationView
               t={t}
