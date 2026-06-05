@@ -201,17 +201,16 @@ export default function App() {
   );
 }
 
-const CONFETTI_EMOJIS = ['🎉','⭐','✨','🌟','💫','🎊','🔥','💪'];
+const CONFETTI_EMOJIS = ['🎉','⭐','✨','🌟','💫','🎊','☀️','🌅'];
 
 const Confetti = memo(() => {
-  const particles = useMemo(() => Array.from({length: 16}, (_, i) => ({
+  const particles = useMemo(() => Array.from({length: 18}, (_, i) => ({
     id: i,
     emoji: CONFETTI_EMOJIS[i % CONFETTI_EMOJIS.length],
-    x: Math.random() * 100,
-    delay: Math.random() * 0.5,
-    duration: 1.2 + Math.random() * 0.8,
-    size: 20 + Math.floor(Math.random() * 20),
-    rotate: Math.random() * 360,
+    x: 10 + Math.random() * 80,
+    delay: Math.random() * 0.6,
+    duration: 1.5 + Math.random() * 1.0,
+    size: 22 + Math.floor(Math.random() * 22),
   })), []);
 
   return (
@@ -219,24 +218,24 @@ const Confetti = memo(() => {
       position:'fixed', top:0, left:0, right:0, bottom:0,
       pointerEvents:'none', zIndex:9999, overflow:'hidden'
     }}>
+      <style>{`
+        @keyframes rise {
+          0%   { transform: translateY(0) scale(0.4) rotate(0deg); opacity: 1; }
+          70%  { opacity: 1; }
+          100% { transform: translateY(-110vh) scale(1.3) rotate(40deg); opacity: 0; }
+        }
+      `}</style>
       {particles.map(p => (
         <div key={p.id} style={{
           position:'absolute',
           left: `${p.x}%`,
-          top: '-10%',
+          bottom: '10%',
           fontSize: p.size,
-          animation: `fall ${p.duration}s ease-in ${p.delay}s forwards`,
+          animation: `rise ${p.duration}s cubic-bezier(0.2, 0.8, 0.4, 1) ${p.delay}s forwards`,
         }}>
           {p.emoji}
         </div>
       ))}
-      <style>{`
-        @keyframes fall {
-          0%   { transform: translateY(0) rotate(0deg) scale(0.5); opacity: 1; }
-          60%  { opacity: 1; }
-          100% { transform: translateY(110vh) rotate(${Math.random()*720}deg) scale(1.2); opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 });
@@ -259,12 +258,12 @@ const Home = memo(({t,s,onCheckIn,onUndo,checked,justChecked,canCheckYesterday,o
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     {justChecked && <Confetti/>}
     {checked ? (
-      <div className="w-full mb-10 bg-white/5 rounded-[24px] border border-[#3A7BD5]/30 p-5 flex flex-col items-center gap-2">
-        <p className="text-xs font-black uppercase tracking-widest text-[#3A7BD5]/80">{t.tomorrowGoalPrompt}</p>
-        <p className="text-[#98C1FF] font-black text-2xl">{fmt(s.currentTargetTime)}</p>
-        <p className="text-sm text-white/70 text-center leading-snug">{t.tomorrowGoalDesc}</p>
+      <div className="w-full mb-10 bg-[#3A7BD5]/10 rounded-[28px] border border-[#3A7BD5]/40 p-6 flex flex-col items-center gap-3">
+        <p className="text-sm font-black uppercase tracking-widest text-[#3A7BD5]">{t.tomorrowGoalPrompt}</p>
+        <p className="text-[#98C1FF] font-black text-4xl">{fmt(s.currentTargetTime)}</p>
+        <p className="text-base text-white font-bold text-center leading-snug">{t.tomorrowGoalDesc}</p>
         <button type="button" onClick={onGoToSettings}
-          className="mt-1 px-5 py-2 bg-[#3A7BD5] text-white text-xs font-black rounded-full transition-all active:scale-95">
+          className="mt-2 px-6 py-3 bg-[#3A7BD5] text-white text-sm font-black rounded-full transition-all active:scale-95 shadow-lg">
           {t.tomorrowGoalBtn}
         </button>
       </div>
