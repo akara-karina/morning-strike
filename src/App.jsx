@@ -74,7 +74,7 @@ function defaultState() {
     streak:0, bestStreak:0,
     checkedDays:[],
     currentTargetTime:480, ultimateGoalTime:420, startingWakeTime:660,
-    compassionateMode:true, lastShiftDate:null, language:'en', onboarded:false
+    compassionateMode:true, lastShiftDate:null, language:'ko', onboarded:false
   };
 }
 
@@ -159,7 +159,7 @@ export default function App() {
   }, []);
 
   const content = () => {
-    if (!s.onboarded) return <Onboarding t={t} lang={lang} onDone={finishOnboarding}/>;
+    if (!s.onboarded) return <Onboarding t={t} lang={lang} onDone={finishOnboarding} onLangChange={l=>update({language:l})}/>;
     if (celebrate) return <Celebration t={t} lang={lang} s={s} onClose={() => { setCelebrate(false); setTab('challenge'); }}/>;
     if (tab==='calendar') return <Cal t={t} lang={lang} s={s}/>;
     if (tab==='challenge') return <Challenge t={t} lang={lang} s={s}/>;
@@ -232,19 +232,19 @@ const Home = memo(({t,s,onCheckIn,onUndo,checked,justChecked,canCheckYesterday,o
     </div>
     {checked && (
       <button type="button" onClick={onUndo}
-        className="mb-8 px-5 py-2 rounded-full border border-white/10 text-white/30 text-xs font-bold hover:border-red-500/40 hover:text-red-400 transition-all">
+        className="mb-8 px-5 py-2 rounded-full border border-white/10 text-white/70 text-xs font-bold hover:border-red-500/40 hover:text-red-400 transition-all">
         {t.undoCheckIn}
       </button>
     )}
     {!checked && <div className="mb-8"/>}
     <div className="flex items-center gap-3 mb-14 bg-white/5 px-6 py-3 rounded-full border border-white/5">
       <Flame className="text-[#F5A623]" size={32} fill="#F5A623"/>
-      <span className="text-3xl font-black italic">{s.streak} <span className="text-lg not-italic font-bold text-white/60 ml-1">{t.daysStreak}</span></span>
+      <span className="text-3xl font-black italic">{s.streak} <span className="text-lg not-italic font-bold text-white/85 ml-1">{t.daysStreak}</span></span>
     </div>
     <div className="w-full rounded-[32px] overflow-hidden shadow-2xl aspect-[4/3] relative border border-white/10">
       <div className="absolute inset-0 bg-gradient-to-t from-[#1A1A2E] via-transparent to-transparent z-10 opacity-80"/>
       <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=600" alt="Sunrise" className="w-full h-full object-cover"/>
-      <p className="absolute bottom-6 left-0 right-0 text-center z-20 text-white/60 uppercase tracking-[0.3em] text-[10px] font-black">{t.consistency}</p>
+      <p className="absolute bottom-6 left-0 right-0 text-center z-20 text-white/85 uppercase tracking-[0.3em] text-[10px] font-black">{t.consistency}</p>
     </div>
   </div>
 ));
@@ -258,7 +258,7 @@ const Celebration = memo(({t,lang,s,onClose}) => {
     <div className="px-6 pt-10 pb-12 flex flex-col">
       <div className="flex justify-between items-center mb-8">
         <button type="button" onClick={onClose} className="p-2 hover:bg-white/5 rounded-full"><ChevronLeft size={24}/></button>
-        <h1 className="text-lg font-black tracking-tighter uppercase opacity-60">{t.routine}</h1>
+        <h1 className="text-lg font-black tracking-tighter uppercase opacity-90">{t.routine}</h1>
         <button type="button" className="p-2 hover:bg-white/5 rounded-full"><Share2 size={24}/></button>
       </div>
       <div className="grid grid-cols-2 gap-4 mb-8">
@@ -266,14 +266,14 @@ const Celebration = memo(({t,lang,s,onClose}) => {
           {icon:<Trophy size={24} className="text-[#3A7BD5]"/>,val:s.bestStreak,lbl:t.best}].map((x,i)=>(
           <div key={i} className="bg-white/5 p-6 rounded-[24px] border border-white/5 flex flex-col items-center">
             <div className="flex items-center gap-2 mb-1">{x.icon}<span className="text-2xl font-black">{x.val}</span></div>
-            <span className="text-[10px] text-white/40 font-bold">{t.daysStreak}</span>
-            <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold mt-0.5">{x.lbl}</span>
+            <span className="text-[10px] text-white/75 font-bold">{t.daysStreak}</span>
+            <span className="text-[10px] uppercase tracking-widest text-white/75 font-bold mt-0.5">{x.lbl}</span>
           </div>
         ))}
       </div>
       <div className="mb-8">
         <h2 className="text-2xl font-black mb-5 tracking-tighter">{monthLabel(t,lang,y,m)}</h2>
-        <div className="grid grid-cols-7 text-center text-[10px] text-white/30 font-black mb-3 tracking-widest">
+        <div className="grid grid-cols-7 text-center text-[10px] text-white/70 font-black mb-3 tracking-widest">
           {t.daysShort.map((d,i)=><span key={i}>{d}</span>)}
         </div>
         <div className="grid grid-cols-7 gap-y-3">
@@ -340,13 +340,13 @@ const Cal = memo(({t,lang,s}) => {
 
   return (
     <div className="px-6 pt-10 pb-12">
-      <div className="mb-6 opacity-60"><h1 className="text-lg font-black tracking-tighter uppercase">{t.routine}</h1></div>
+      <div className="mb-6 opacity-90"><h1 className="text-lg font-black tracking-tighter uppercase">{t.routine}</h1></div>
       <div className="grid grid-cols-2 gap-4 mb-8">
         {[{icon:<Flame size={20} className="text-[#F5A623]" fill="#F5A623"/>,val:s.streak,lbl:t.current},
           {icon:<Trophy size={20} className="text-[#3A7BD5]"/>,val:s.bestStreak,lbl:t.best}].map((x,i)=>(
           <div key={i} className="bg-white/5 p-5 rounded-[20px] border border-white/5 flex flex-col items-center">
             <div className="flex items-center gap-2 mb-1">{x.icon}<span className="text-xl font-black">{x.val}</span></div>
-            <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold">{x.lbl}</span>
+            <span className="text-[9px] uppercase tracking-widest text-white/75 font-bold">{x.lbl}</span>
           </div>
         ))}
       </div>
@@ -374,7 +374,7 @@ const Cal = memo(({t,lang,s}) => {
       </div>
 
       <div className="bg-white/5 p-6 rounded-[32px] border border-white/5 mb-8">
-        <div className="grid grid-cols-7 text-center text-[10px] text-white/30 font-black mb-5 tracking-widest">
+        <div className="grid grid-cols-7 text-center text-[10px] text-white/70 font-black mb-5 tracking-widest">
           {t.daysShort.map((d,i)=><span key={i}>{d}</span>)}
         </div>
         <div className="grid grid-cols-7 gap-y-4">
@@ -384,7 +384,7 @@ const Cal = memo(({t,lang,s}) => {
             const ck=cset.has(ds), it=ds===today, isFuture=ds>today;
             return <div key={ds} className="flex justify-center">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black
-                ${ck?'bg-[#3A7BD5] text-white':it?'border-2 border-[#3A7BD5] text-[#3A7BD5]':isFuture?'text-white/20':'text-white/60'}`}>
+                ${ck?'bg-[#3A7BD5] text-white':it?'border-2 border-[#3A7BD5] text-[#3A7BD5]':isFuture?'text-white/50':'text-white/85'}`}>
                 {ck?<CheckCircle2 size={17}/>:day}
               </div>
             </div>;
@@ -392,7 +392,7 @@ const Cal = memo(({t,lang,s}) => {
         </div>
       </div>
 
-      <p className="text-center text-lg font-bold text-white/50 mb-8 px-4">
+      <p className="text-center text-lg font-bold text-white/80 mb-8 px-4">
         {t.keptItUp} <span className="text-white font-black text-xl">{cnt}</span> {t.morningsThisMonth}
       </p>
       <div className="rounded-[32px] overflow-hidden aspect-video border border-white/5">
@@ -408,47 +408,47 @@ const Challenge = memo(({t,lang,s}) => {
   const reached=cur<=goal, nextT=reached?goal:cur-SHIFT;
   return (
     <div className="px-6 pt-10 pb-12">
-      <div className="mb-8 opacity-60"><h1 className="text-lg font-black tracking-tighter uppercase">{t.challengeTitle}</h1></div>
+      <div className="mb-8 opacity-90"><h1 className="text-lg font-black tracking-tighter uppercase">{t.challengeTitle}</h1></div>
       <div className="mb-10">
         <div className="flex justify-between text-sm font-black mb-3">
-          <span className="text-white/40">{fmt(start)}</span>
+          <span className="text-white/75">{fmt(start)}</span>
           <span className="text-[#F5A623] text-base">{fmt(cur)}</span>
-          <span className="text-white/40">{fmt(goal)}</span>
+          <span className="text-white/75">{fmt(goal)}</span>
         </div>
         <div className="relative h-3 bg-white/10 rounded-full mb-4">
           <div className="h-full bg-gradient-to-r from-[#F5A623] to-[#3A7BD5] rounded-full transition-all duration-700" style={{width:`${pct*100}%`}}/>
           <div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-[#F5A623] rounded-full border-2 border-[#1A1A2E] shadow-lg transition-all duration-700" style={{left:`calc(${pct*100}% - 10px)`}}/>
         </div>
-        <p className="text-center text-sm text-white/40 font-bold">{done} {t.stepsCompleted} · {rem} {t.stepsRemaining}</p>
+        <p className="text-center text-sm text-white/75 font-bold">{done} {t.stepsCompleted} · {rem} {t.stepsRemaining}</p>
       </div>
       {reached ? (
         <div className="bg-[#3A7BD5]/20 p-7 rounded-[28px] border border-[#3A7BD5]/30 mb-8 text-center">
           <p className="text-3xl font-black mb-2">{t.goalReached}</p>
-          <p className="text-white/60 text-sm">{t.goalReachedDesc}</p>
+          <p className="text-white/85 text-sm">{t.goalReachedDesc}</p>
         </div>
       ) : (
         <div className="bg-white/5 p-7 rounded-[28px] border border-white/5 mb-8 relative overflow-hidden">
           <div className="absolute top-4 right-4 opacity-10"><Target size={48}/></div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-3">{t.tomorrowTarget}</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-3">{t.tomorrowTarget}</p>
           <div className="flex items-baseline gap-3 mb-2">
             <span className="text-4xl font-black text-[#98C1FF]">{fmt(nextT)}</span>
-            <span className="text-sm text-white/40 font-bold">-10 min</span>
+            <span className="text-sm text-white/75 font-bold">-10 min</span>
           </div>
-          <p className="text-sm text-white/50 mb-3">{t.wakeEarlier}</p>
-          <p className="text-xs text-white/30 italic">{t.motto}</p>
+          <p className="text-sm text-white/80 mb-3">{t.wakeEarlier}</p>
+          <p className="text-xs text-white/70 italic">{t.motto}</p>
         </div>
       )}
       <div className="grid grid-cols-3 gap-3 mb-8">
         {[{l:t.daysActive,v:checkedDays.length,u:''},{l:t.timeShifted,v:done*SHIFT,u:' min'},{l:t.streakLabel,v:streak,u:''}].map(({l,v,u})=>(
           <div key={l} className="bg-white/5 p-4 rounded-[20px] border border-white/5 text-center">
-            <p className="text-[9px] uppercase tracking-widest text-white/30 font-black mb-2">{l}</p>
-            <p className="text-xl font-black">{v}<span className="text-xs text-white/40">{u}</span></p>
+            <p className="text-[9px] uppercase tracking-widest text-white/70 font-black mb-2">{l}</p>
+            <p className="text-xl font-black">{v}<span className="text-xs text-white/75">{u}</span></p>
           </div>
         ))}
       </div>
       <div className="bg-white/5 p-5 rounded-[20px] border border-white/5 flex gap-4 items-center">
         <div className="p-3 bg-[#3A7BD5]/10 rounded-2xl text-[#3A7BD5] shrink-0"><TrendingUp size={20}/></div>
-        <p className="text-xs text-white/40 leading-relaxed">
+        <p className="text-xs text-white/75 leading-relaxed">
           {lang==='ko' ? `꾸준함이 핵심입니다. ${checkedDays.length}일 동안 리듬을 유지했어요.`
             : `Consistent progress is key. You've adjusted your rhythm for ${checkedDays.length} days.`}
         </p>
@@ -468,23 +468,23 @@ const Sett = memo(({t,lang,s,update}) => {
         <div className="flex bg-white/5 p-1.5 rounded-xl border border-white/5">
           {['en','ko'].map(l=>(
             <button key={l} type="button" onClick={()=>update({language:l})}
-              className={`px-4 py-1.5 text-[10px] font-black rounded-lg transition-all ${lang===l?'bg-[#3A7BD5] text-white':'text-gray-500'}`}>
+              className={`px-4 py-1.5 text-[10px] font-black rounded-lg transition-all ${lang===l?'bg-[#3A7BD5] text-white':'text-white/50'}`}>
               {l.toUpperCase()}
             </button>
           ))}
         </div>
       </div>
       <section className="mb-8">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-5">{t.yourChallenge}</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-5">{t.yourChallenge}</h3>
         <div className="grid grid-cols-2 gap-4">
           <TP label={t.currentTarget} value={s.currentTargetTime} onChange={v=>update(prev=>({currentTargetTime:clamp(v,prev.ultimateGoalTime+SHIFT,1439), startingWakeTime:clamp(v,prev.ultimateGoalTime+SHIFT,1439)}))} />
           <TP label={t.ultimateGoal} value={s.ultimateGoalTime} onChange={v=>update(prev=>({ultimateGoalTime:clamp(v,0,prev.currentTargetTime-SHIFT)}))} />
         </div>
-        <p className="text-xs text-white/30 mt-5 px-2 italic">{t.shiftMessage}</p>
+        <p className="text-xs text-white/70 mt-5 px-2 italic">{t.shiftMessage}</p>
       </section>
 
       <section className="mb-10">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-5">{t.streakRules}</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-5">{t.streakRules}</h3>
         <div className="bg-white/5 p-6 rounded-[28px] border border-[#3A7BD5]/20 flex items-center justify-between">
           <div className="flex gap-4 items-start">
             <div className="p-3 bg-[#3A7BD5]/10 rounded-2xl text-[#3A7BD5]"><ShieldCheck size={20}/></div>
@@ -493,7 +493,7 @@ const Sett = memo(({t,lang,s,update}) => {
                 <span className="font-black">{t.compassionate}</span>
 
               </div>
-              <p className="text-[11px] text-white/30 max-w-[180px]">{t.compDesc}</p>
+              <p className="text-[11px] text-white/70 max-w-[180px]">{t.compDesc}</p>
             </div>
           </div>
           <Tog enabled={s.compassionateMode} onToggle={()=>update(prev=>({compassionateMode:!prev.compassionateMode}))}/>
@@ -511,53 +511,66 @@ const Sett = memo(({t,lang,s,update}) => {
 const TP = memo(({label,value,onChange}) => (
   <div className="bg-white/5 p-5 rounded-[28px] border border-white/5 flex flex-col items-center gap-2">
     <span style={{height:32, display:'flex', alignItems:'center', textAlign:'center'}}
-      className="text-[10px] font-black uppercase tracking-widest text-white/30 leading-tight px-1">
+      className="text-[10px] font-black uppercase tracking-widest text-white/70 leading-tight px-1">
       {label}
     </span>
-    <button type="button" onClick={()=>onChange(value+SHIFT)} className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
+    <button type="button" onClick={()=>onChange(value+SHIFT)} className="text-white/50 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
     <div className="text-xl font-black text-[#98C1FF]">{fmt(value)}</div>
-    <button type="button" onClick={()=>onChange(value-SHIFT)} className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
+    <button type="button" onClick={()=>onChange(value-SHIFT)} className="text-white/50 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
   </div>
 ));
 
-const Onboarding = memo(({t, lang, onDone}) => {
-  const [currentTime, setCurrentTime] = useState(660); // 11:00 AM
-  const [goalTime, setGoalTime] = useState(420);        // 7:00 AM
+const Onboarding = memo(({t, lang, onDone, onLangChange}) => {
+  const [currentTime, setCurrentTime] = useState(660);
+  const [goalTime, setGoalTime] = useState(420);
   const clamp = (v,mn,mx) => Math.max(mn, Math.min(mx, v));
 
   return (
-    <div className="px-8 pt-20 pb-12 flex flex-col items-center min-h-full">
+    <div className="px-8 pt-12 pb-12 flex flex-col items-center min-h-full">
+      {/* 언어 토글 — 우측 상단 */}
+      <div className="w-full flex justify-end mb-8">
+        <div className="flex bg-white/5 p-1.5 rounded-xl border border-white/5">
+          {['ko','en'].map(l => (
+            <button key={l} type="button" onClick={()=>onLangChange(l)}
+              className={`px-4 py-1.5 text-[10px] font-black rounded-lg transition-all
+                ${lang===l ? 'bg-[#3A7BD5] text-white shadow-lg' : 'text-white/50'}`}>
+              {l === 'ko' ? 'KOR' : 'ENG'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="text-5xl mb-6">🌅</div>
       <h1 className="text-2xl font-black text-center mb-3 tracking-tight">{t.onboardingTitle}</h1>
-      <p className="text-sm text-white/50 text-center mb-12 leading-relaxed">{t.onboardingDesc}</p>
+      <p className="text-sm text-white/80 text-center mb-12 leading-relaxed">{t.onboardingDesc}</p>
 
       <div className="w-full grid grid-cols-2 gap-4 mb-10">
         <div className="bg-white/5 p-5 rounded-[28px] border border-white/5 flex flex-col items-center gap-2">
           <span style={{height:36, display:'flex', alignItems:'center', textAlign:'center'}}
-            className="text-[10px] font-black uppercase tracking-widest text-white/40 leading-tight px-1">
+            className="text-[10px] font-black uppercase tracking-widest text-white/75 leading-tight px-1">
             {t.onboardingCurrent}
           </span>
           <button type="button" onClick={()=>setCurrentTime(v=>clamp(v+10, goalTime+10, 1439))}
-            className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
+            className="text-white/50 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
           <div className="text-xl font-black text-[#98C1FF]">{fmt(currentTime)}</div>
           <button type="button" onClick={()=>setCurrentTime(v=>clamp(v-10, goalTime+10, 1439))}
-            className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
+            className="text-white/50 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
         </div>
         <div className="bg-white/5 p-5 rounded-[28px] border border-[#3A7BD5]/20 flex flex-col items-center gap-2">
           <span style={{height:36, display:'flex', alignItems:'center', textAlign:'center'}}
-            className="text-[10px] font-black uppercase tracking-widest text-white/40 leading-tight px-1">
+            className="text-[10px] font-black uppercase tracking-widest text-white/75 leading-tight px-1">
             {t.onboardingGoal}
           </span>
           <button type="button" onClick={()=>setGoalTime(v=>clamp(v+10, 0, currentTime-10))}
-            className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
+            className="text-white/50 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
           <div className="text-xl font-black text-[#F5A623]">{fmt(goalTime)}</div>
           <button type="button" onClick={()=>setGoalTime(v=>clamp(v-10, 0, currentTime-10))}
-            className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
+            className="text-white/50 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
         </div>
       </div>
 
       <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/5 mb-10 text-center">
-        <p className="text-xs text-white/40 leading-relaxed">
+        <p className="text-xs text-white/75 leading-relaxed">
           {lang==='ko'
             ? `${fmt(currentTime)}에서 ${fmt(goalTime)}까지 — 매일 10분씩 앞당겨요`
             : `${fmt(currentTime)} → ${fmt(goalTime)} — shifting 10 min earlier each day`}
