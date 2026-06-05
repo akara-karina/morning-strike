@@ -26,6 +26,9 @@ const T = {
     onboardingTitle:"Good morning! 🌅", onboardingDesc:"Let's set up your wake-up challenge.",
     onboardingCurrent:"What time do you usually wake up?", onboardingGoal:"What's your goal wake time?",
     onboardingBtn:"Start My Challenge →",
+    newGoalBtn:"Set New Goal →",
+    firstCheckIn:"Your first morning! 🌱 The journey begins.",
+    welcomeBack:"Welcome back! 💙 Pick up right where you left off.",
     months:["January","February","March","April","May","June","July","August","September","October","November","December"],
     daysShort:["S","M","T","W","T","F","S"]
   },
@@ -52,6 +55,9 @@ const T = {
     onboardingTitle:"좋은 아침이에요! 🌅", onboardingDesc:"기상 챌린지를 설정해볼게요.",
     onboardingCurrent:"지금 보통 몇 시에 일어나요?", onboardingGoal:"목표 기상 시간은 몇 시예요?",
     onboardingBtn:"챌린지 시작하기 →",
+    newGoalBtn:"새 목표 설정하기 →",
+    firstCheckIn:"첫 번째 기상이에요! 🌱 여정이 시작됐어요.",
+    welcomeBack:"다시 오셨군요! 💙 이어서 시작해요.",
     months:["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],
     daysShort:["일","월","화","수","목","금","토"]
   }
@@ -83,7 +89,7 @@ function defaultState() {
   return {
     streak:0, bestStreak:0, checkedDays:[], lateCheckedDays:[],
     currentTargetTime:480, ultimateGoalTime:420, startingWakeTime:480,
-    compassionateMode:true, language:'ko', onboarded:false, lastShiftDate:null
+    compassionateMode:true, language:'ko', onboarded:false, lastShiftDate:null, lastOpenDate:null
   };
 }
 function loadState() {
@@ -150,11 +156,31 @@ export default function App() {
   const [tab, setTab] = useState('today');
   const [justChecked, setJustChecked] = useState(false);
   const [justLate, setJustLate] = useState(false);
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
+  const [showFirstCheckIn, setShowFirstCheckIn] = useState(false);
   const [s, setS] = useState(loadState);
 
   useEffect(() => {
     try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
   }, [s]);
+
+  // 앱 열 때 공백 체크
+  useEffect(() => {
+    if (!s.onboarded) return;
+    const today = todayStr();
+    if (s.lastOpenDate && s.lastOpenDate !== today) {
+      const last = new Date(s.lastOpenDate);
+      const now = new Date(today);
+      const diff = Math.round((now - last) / (1000*60*60*24));
+      if (diff >= 2) {
+        setShowWelcomeBack(true);
+        setTimeout(() => setShowWelcomeBack(false), 4000);
+      }
+    }
+    // lastOpenDate 업데이트
+    setS(prev => ({ ...prev, lastOpenDate: today }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.onboarded]);
 
   const lang = s.language === 'ko' ? 'ko' : 'en';
   const t = T[lang];
@@ -184,12 +210,17 @@ export default function App() {
     const nextTarget = s.currentTargetTime > s.ultimateGoalTime
       ? Math.max(s.ultimateGoalTime, s.currentTargetTime - SHIFT)
       : s.currentTargetTime;
+    const isFirstEver = s.checkedDays.length === 0 && (s.lateCheckedDays||[]).length === 0;
     setS(prev => ({
       ...prev,
       checkedDays: [...prev.checkedDays, TODAY],
       streak, bestStreak: Math.max(streak, prev.bestStreak),
       currentTargetTime: nextTarget, lastShiftDate: TODAY
     }));
+    if (isFirstEver) {
+      setShowFirstCheckIn(true);
+      setTimeout(() => setShowFirstCheckIn(false), 4000);
+    }
     flash();
   }, [s, TODAY, YESTERDAY, checked, flash]);
 
@@ -247,13 +278,15 @@ export default function App() {
   const renderScreen = () => {
     if (!s.onboarded) return <Onboarding t={t} lang={lang} onDone={finishOnboarding} onLangChange={l=>update({language:l})}/>;
     if (tab==='calendar') return <Cal t={t} lang={lang} s={s}/>;
-    if (tab==='challenge') return <Challenge t={t} lang={lang} s={s}/>;
+    if (tab==='challenge') return <Challenge t={t} lang={lang} s={s} onGoToSettings={()=>setTab('settings')}/>;
     if (tab==='settings') return <Sett t={t} lang={lang} s={s} update={update}/>;
     return (
       <Home
         t={t} s={s}
         checked={checked} lateChecked={lateChecked} tooLate={tooLate}
         justChecked={justChecked} justLate={justLate}
+        showWelcomeBack={showWelcomeBack}
+        showFirstCheckIn={showFirstCheckIn}
         onCheckIn={checkIn}
         onLateCheckIn={checkInLate}
         onUndo={undoCheckIn}
@@ -291,10 +324,24 @@ const NB = memo(({label,icon,active,onClick}) => (
 ));
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-const Home = memo(({t,s,checked,lateChecked,tooLate,justChecked,justLate,onCheckIn,onLateCheckIn,onUndo,onUndoLate,onGoToSettings}) => (
+const Home = memo(({t,s,checked,lateChecked,tooLate,justChecked,justLate,showWelcomeBack,showFirstCheckIn,onCheckIn,onLateCheckIn,onUndo,onUndoLate,onGoToSettings}) => (
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     {justChecked && <Confetti/>}
     {justLate && <ThumbsUp message={t.lateEncouragement}/>}
+    {showFirstCheckIn && (
+      <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:9998,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:60}}>
+        <div style={{background:'rgba(58,123,213,0.15)',border:'1.5px solid rgba(58,123,213,0.5)',borderRadius:20,padding:'14px 24px',backdropFilter:'blur(8px)',animation:'fadeinup 4s ease forwards',maxWidth:300,textAlign:'center'}}>
+          <p style={{color:'#98C1FF',fontWeight:900,fontSize:15,margin:0,lineHeight:1.5}}>{t.firstCheckIn}</p>
+        </div>
+      </div>
+    )}
+    {showWelcomeBack && (
+      <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,pointerEvents:'none',zIndex:9998,display:'flex',alignItems:'flex-start',justifyContent:'center',paddingTop:60}}>
+        <div style={{background:'rgba(58,123,213,0.15)',border:'1.5px solid rgba(58,123,213,0.5)',borderRadius:20,padding:'14px 24px',backdropFilter:'blur(8px)',animation:'fadeinup 4s ease forwards',maxWidth:300,textAlign:'center'}}>
+          <p style={{color:'#98C1FF',fontWeight:900,fontSize:15,margin:0,lineHeight:1.5}}>{t.welcomeBack}</p>
+        </div>
+      </div>
+    )}
 
     {/* 상단 목표 표시 */}
     {checked ? (
@@ -437,7 +484,7 @@ const Cal = memo(({t,lang,s}) => {
 });
 
 // ── Challenge ─────────────────────────────────────────────────────────────────
-const Challenge = memo(({t,lang,s}) => {
+const Challenge = memo(({t,lang,s,onGoToSettings}) => {
   const {currentTargetTime:cur,ultimateGoalTime:goal,startingWakeTime:start,streak,checkedDays} = s;
   const total=Math.max(1,Math.round((start-goal)/SHIFT));
   const done=Math.min(total,Math.round((start-cur)/SHIFT));
@@ -463,7 +510,11 @@ const Challenge = memo(({t,lang,s}) => {
       {reached ? (
         <div className="bg-[#3A7BD5]/20 p-7 rounded-[28px] border border-[#3A7BD5]/30 mb-8 text-center">
           <p className="text-3xl font-black mb-2">{t.goalReached}</p>
-          <p className="text-white/70 text-sm">{t.goalReachedDesc}</p>
+          <p className="text-white/70 text-sm mb-5">{t.goalReachedDesc}</p>
+          <button type="button" onClick={onGoToSettings}
+            className="px-6 py-3 bg-[#3A7BD5] text-white text-sm font-black rounded-full transition-all active:scale-95">
+            {t.newGoalBtn}
+          </button>
         </div>
       ) : (
         <div className="bg-white/5 p-7 rounded-[28px] border border-white/5 mb-8 relative overflow-hidden">
