@@ -11,14 +11,14 @@ const T = {
     keptItUp:"You've kept it up for",morningsThisMonth:"mornings this month.",
     yourChallenge:"Your Challenge",currentTarget:"Tomorrow's Goal",ultimateGoal:"Final Wake Goal",
     shiftMessage:"Morning Streak shifts your target 10 minutes earlier each successful day.",
-    streakRules:"Streak Rules",compassionate:"Compassionate mode",compDesc:"Streaks never fully reset. Missing a day pauses, not breaks.",
+    streakRules:"Streak Rules",compassionate:"Streak Protection Mode",compDesc:"Even if you miss a day, your progress is saved. Pick up right where you left off.",
     saveBtn:"Save My Challenge",saved:"Saved ✓",language:"Language",
     challengeTitle:"My Challenge",stepsCompleted:"steps completed",stepsRemaining:"steps remaining",
     tomorrowTarget:"Tomorrow's Target",wakeEarlier:"Wake 10 minutes earlier than today",
     motto:'"Each morning counts. You\'re getting there."',
     daysActive:"Days Active",timeShifted:"Time Shifted",streakLabel:"Streak",
     goalReached:"🎉 Goal Reached!",goalReachedDesc:"You've reached your target wake time!",
-    onboardingTitle:"Good morning! 🌅",onboardingDesc:"Let's set up your wake-up challenge.",onboardingCurrent:"What time do you wake up now?",onboardingGoal:"What time do you want to wake up?",onboardingBtn:"Start My Challenge →",tomorrowGoalPrompt:"Tomorrow's Goal",tomorrowGoalDesc:"Set tomorrow's wake time in Settings",tomorrowGoalBtn:"Go to Settings →",
+    onboardingTitle:"Good morning! 🌅",onboardingDesc:"Let's set up your wake-up challenge.",onboardingCurrent:"What time do you wake up now?",onboardingGoal:"What time do you want to wake up?",onboardingBtn:"Start My Challenge →",tomorrowGoalPrompt:"Tomorrow's Goal",tooLateMsg:"You've passed today's goal time",tooLateDesc:"Set an earlier goal for tomorrow in Settings",tomorrowGoalDesc:"Set tomorrow's wake time in Settings",tomorrowGoalBtn:"Go to Settings →",
     months:["January","February","March","April","May","June","July","August","September","October","November","December"],
     daysShort:["S","M","T","W","T","F","S"]
   },
@@ -31,14 +31,14 @@ const T = {
     keptItUp:"이번 달에 총",morningsThisMonth:"번의 아침을 지켜냈어요.",
     yourChallenge:"나의 챌린지",currentTarget:"내일 목표",ultimateGoal:"최종 기상 목표",
     shiftMessage:"성공할 때마다 목표 기상 시간이 10분씩 자동으로 앞당겨집니다.",
-    streakRules:"스트릭 규칙",compassionate:"컴패셔네이트 모드",compDesc:"스트릭이 완전히 초기화되지 않습니다. 하루를 놓쳐도 끊기지 않고 멈춥니다.",
+    streakRules:"스트릭 규칙",compassionate:"연속 기록 보호 모드",compDesc:"하루를 빠져도 기록이 사라지지 않아요. 다음 날 바로 이어서 시작할 수 있어요.",
     saveBtn:"나의 챌린지 저장하기",saved:"저장됨 ✓",language:"언어 설정",
     challengeTitle:"나의 챌린지",stepsCompleted:"단계 완료",stepsRemaining:"단계 남음",
     tomorrowTarget:"내일의 목표",wakeEarlier:"오늘보다 10분 일찍 일어나기",
     motto:'"매일 아침이 쌓입니다. 잘 하고 있어요."',
     daysActive:"활성 일수",timeShifted:"앞당긴 시간",streakLabel:"스트릭",
     goalReached:"🎉 목표 달성!",goalReachedDesc:"목표 기상 시간에 도달했습니다!",
-    onboardingTitle:"좋은 아침이에요! 🌅",onboardingDesc:"기상 챌린지를 설정해볼게요.",onboardingCurrent:"지금 보통 몇 시에 일어나요?",onboardingGoal:"목표 기상 시간은 몇 시예요?",onboardingBtn:"챌린지 시작하기 →",tomorrowGoalPrompt:"내일의 목표",tomorrowGoalDesc:"설정에서 내일 기상 목표를 조정해보세요",tomorrowGoalBtn:"설정으로 가기 →",
+    onboardingTitle:"좋은 아침이에요! 🌅",onboardingDesc:"기상 챌린지를 설정해볼게요.",onboardingCurrent:"지금 보통 몇 시에 일어나요?",onboardingGoal:"목표 기상 시간은 몇 시예요?",onboardingBtn:"챌린지 시작하기 →",tomorrowGoalPrompt:"내일의 목표",tooLateMsg:"오늘 목표 시간이 지났어요",tooLateDesc:"내일은 더 일찍 일어날 수 있어요. 설정에서 목표를 조정해보세요",tomorrowGoalDesc:"설정에서 내일 기상 목표를 조정해보세요",tomorrowGoalBtn:"설정으로 가기 →",
     months:["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],
     daysShort:["일","월","화","수","목","금","토"]
   }
@@ -55,6 +55,11 @@ function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+function getCurrentTimeInMinutes() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
 function yesterdayStr() {
   const d = new Date(); d.setDate(d.getDate()-1);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -95,6 +100,8 @@ export default function App() {
 
   const checkIn = useCallback(() => {
     if (s.checkedDays.includes(today)) return;
+    const nowMinutes = getCurrentTimeInMinutes();
+    if (nowMinutes > s.currentTargetTime) return; // 목표 시간 지났으면 차단
     const yesterday = yesterdayStr();
     const last = s.checkedDays.at(-1);
     const streak = (last === yesterday || s.compassionateMode) ? s.streak + 1 : 1;
