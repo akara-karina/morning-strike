@@ -6,7 +6,7 @@ const T = {
     today:"Today",calendar:"Calendar",settings:"Settings",challenge:"Challenge",
     todaysGoal:"Today's Goal",checkedIn:"Checked In ✓",awake:"I'm Awake ☀️",undoCheckIn:"Undo check-in",yesterdayCheckIn:"Miss yesterday? Check in →",
     daysStreak:"days",consistency:"Consistency is Key",routine:"Morning Routine",
-    current:"Current",best:"Best",badges:"Badges Earned",dismiss:"See My Progress →",
+    current:"Current",best:"Best",badges:"Badges Earned",
     streak3:"3 Day Streak",streak7:"7 Day Streak",mastery14:"14 Day Mastery",
     keptItUp:"You've kept it up for",morningsThisMonth:"mornings this month.",
     yourChallenge:"Your Challenge",currentTarget:"Tomorrow's Goal",ultimateGoal:"Final Wake Goal",
@@ -26,7 +26,7 @@ const T = {
     today:"오늘",calendar:"캘린더",settings:"설정",challenge:"챌린지",
     todaysGoal:"오늘의 목표",checkedIn:"체크인 완료 ✓",awake:"일어났어요 ☀️",undoCheckIn:"체크인 취소",yesterdayCheckIn:"어제 체크인 하기 →",
     daysStreak:"일 연속",consistency:"꾸준함이 핵심입니다",routine:"모닝 루틴",
-    current:"현재",best:"최고",badges:"획득한 배지",dismiss:"진행상황 보기 →",
+    current:"현재",best:"최고",badges:"획득한 배지",
     streak3:"3일 스트릭",streak7:"7일 스트릭",mastery14:"14일 마스터",
     keptItUp:"이번 달에 총",morningsThisMonth:"번의 아침을 지켜냈어요.",
     yourChallenge:"나의 챌린지",currentTarget:"내일 목표",ultimateGoal:"최종 기상 목표",
@@ -44,7 +44,7 @@ const T = {
   }
 };
 
-const KEY = 'ms_v3';
+const KEY = 'ms_v5';
 const SHIFT = 10;
 
 function fmt(m) {
@@ -70,7 +70,11 @@ function monthLabel(t, lang, y, m) {
 function loadState() {
   try {
     const s = localStorage.getItem(KEY);
-    if (s) return { ...defaultState(), ...JSON.parse(s) };
+    if (s) {
+      const parsed = JSON.parse(s);
+      delete parsed.tab;
+      return { ...defaultState(), ...parsed };
+    }
   } catch {}
   return defaultState();
 }
@@ -84,13 +88,16 @@ function defaultState() {
 }
 
 export default function App() {
-  const [tab, setTab] = useState('today');
-  const [celebrate, setCelebrate] = useState(false);
+  const [tab, setTab] = useState('today'); // 항상 today로 시작
   const [justChecked, setJustChecked] = useState(false);
   const [s, setS] = useState(loadState);
 
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {}
+    try {
+      const toSave = { ...s };
+      delete toSave.tab;
+      localStorage.setItem(KEY, JSON.stringify(toSave));
+    } catch {}
   }, [s]);
 
   const lang = s.language === 'ko' ? 'ko' : 'en';
@@ -100,8 +107,6 @@ export default function App() {
 
   const checkIn = useCallback(() => {
     if (s.checkedDays.includes(today)) return;
-    const nowMinutes = getCurrentTimeInMinutes();
-    if (nowMinutes > s.currentTargetTime) return; // 목표 시간 지났으면 차단
     const yesterday = yesterdayStr();
     const last = s.checkedDays.at(-1);
     const streak = (last === yesterday || s.compassionateMode) ? s.streak + 1 : 1;
@@ -127,7 +132,6 @@ export default function App() {
       currentTargetTime: Math.min(prev.currentTargetTime + SHIFT, prev.startingWakeTime),
       lastShiftDate: null
     }));
-    setCelebrate(false);
     setJustChecked(false);
   }, [s, today]);
 
@@ -177,7 +181,6 @@ export default function App() {
 
   const content = () => {
     if (!s.onboarded) return <Onboarding t={t} lang={lang} onDone={finishOnboarding} onLangChange={l=>update({language:l})}/>;
-    if (celebrate) return <Celebration t={t} lang={lang} s={s} onClose={() => { setCelebrate(false); setTab('challenge'); }}/>;
     if (tab==='calendar') return <Cal t={t} lang={lang} s={s}/>;
     if (tab==='challenge') return <Challenge t={t} lang={lang} s={s}/>;
     if (tab==='settings') return <Sett t={t} lang={lang} s={s} update={update}/>;
@@ -200,7 +203,7 @@ export default function App() {
         </div>
 
         {/* 하단 네비 — flex item, 절대 밀리지 않음 */}
-        {!celebrate && s.onboarded && (
+        {s.onboarded && (
           <div style={{
             flexShrink:0, background:'#1A1A2E',
             borderTop:'1px solid rgba(255,255,255,0.08)',
@@ -341,67 +344,6 @@ const Home = memo(({t,s,onCheckIn,onUndo,onLateCheckIn,checked,justChecked,canCh
     </div>
   </div>
 ));
-
-const Celebration = memo(({t,lang,s,onClose}) => {
-  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
-  const fd = new Date(y,m,1).getDay(), dim = new Date(y,m+1,0).getDate();
-  const today = todayStr();
-  const cset = useMemo(()=>new Set(s.checkedDays),[s.checkedDays]);
-  return (
-    <div className="px-6 pt-10 pb-12 flex flex-col">
-      <div className="flex justify-between items-center mb-8">
-        <button type="button" onClick={onClose} className="p-2 hover:bg-white/5 rounded-full"><ChevronLeft size={24}/></button>
-        <h1 className="text-lg font-black tracking-tighter uppercase opacity-90">{t.routine}</h1>
-        <button type="button" className="p-2 hover:bg-white/5 rounded-full"><Share2 size={24}/></button>
-      </div>
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        {[{icon:<Flame size={24} className="text-[#F5A623]" fill="#F5A623"/>,val:s.streak,lbl:t.current},
-          {icon:<Trophy size={24} className="text-[#3A7BD5]"/>,val:s.bestStreak,lbl:t.best}].map((x,i)=>(
-          <div key={i} className="bg-white/5 p-6 rounded-[24px] border border-white/5 flex flex-col items-center">
-            <div className="flex items-center gap-2 mb-1">{x.icon}<span className="text-2xl font-black">{x.val}</span></div>
-            <span className="text-[10px] text-white/75 font-bold">{t.daysStreak}</span>
-            <span className="text-[10px] uppercase tracking-widest text-white/75 font-bold mt-0.5">{x.lbl}</span>
-          </div>
-        ))}
-      </div>
-      <div className="mb-8">
-        <h2 className="text-2xl font-black mb-5 tracking-tighter">{monthLabel(t,lang,y,m)}</h2>
-        <div className="grid grid-cols-7 text-center text-[10px] text-white/70 font-black mb-3 tracking-widest">
-          {t.daysShort.map((d,i)=><span key={i}>{d}</span>)}
-        </div>
-        <div className="grid grid-cols-7 gap-y-3">
-          {Array.from({length:fd}).map((_,i)=><div key={`p${i}`}/>)}
-          {Array.from({length:dim},(_,i)=>{
-            const day=i+1, ds=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const ck=cset.has(ds), it=ds===today;
-            return <div key={ds} className="flex justify-center">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-black
-                ${ck?'bg-[#3A7BD5] text-white':it?'border-2 border-[#F5A623] text-[#F5A623]':'text-white/25'}`}>
-                {ck?<CheckCircle2 size={16}/>:day}
-              </div>
-            </div>;
-          })}
-        </div>
-      </div>
-      <div className="mb-8">
-        <h3 className="text-xl font-black mb-5">{t.badges}</h3>
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {[[3,t.streak3],[7,t.streak7],[14,t.mastery14]].map(([d,l])=>(
-            <div key={d} className={`min-w-[120px] p-5 rounded-[20px] flex flex-col items-center gap-3 ${s.streak>=d?'bg-white/5 border border-white/10':'opacity-20 grayscale bg-black/20'}`}>
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${s.streak>=d?'bg-[#3A7BD5]/20 text-[#3A7BD5]':'bg-gray-800'}`}>
-                <div className="border-2 border-current rounded-md w-6 h-6 flex items-center justify-center text-[10px] font-black">{d}</div>
-              </div>
-              <span className="text-[10px] font-black text-center uppercase">{l}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <button type="button" onClick={onClose} className="w-full py-5 bg-[#3A7BD5] text-white font-black rounded-2xl uppercase tracking-widest text-xs">
-        {t.dismiss}
-      </button>
-    </div>
-  );
-});
 
 const Cal = memo(({t,lang,s}) => {
   const now = new Date();
