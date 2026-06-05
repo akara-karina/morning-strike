@@ -63,7 +63,7 @@ function monthLabel(t, lang, y, m) {
 function loadState() {
   try {
     const s = localStorage.getItem(KEY);
-    if (s) return { ...defaultState(), ...JSON.parse(s), compassionateMode: true };
+    if (s) return { ...defaultState(), ...JSON.parse(s) };
   } catch {}
   return defaultState();
 }
@@ -458,12 +458,12 @@ const Sett = memo(({t,lang,s,update}) => {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-black">{t.compassionate}</span>
-                <span className="text-[9px] bg-[#3A7BD5]/20 text-[#3A7BD5] px-2 py-0.5 rounded-full font-black">LOCKED</span>
+
               </div>
               <p className="text-[11px] text-white/30 max-w-[180px]">{t.compDesc}</p>
             </div>
           </div>
-          <Tog enabled={true} disabled={true}/>
+          <Tog enabled={s.compassionateMode} onToggle={()=>update(prev=>({compassionateMode:!prev.compassionateMode}))}/>
         </div>
       </section>
       <button type="button" onClick={()=>setSaved(true)}
