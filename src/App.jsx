@@ -274,7 +274,9 @@ const NB = memo(({label,icon,active,onClick}) => (
   </button>
 ));
 
-const Home = memo(({t,s,onCheckIn,onUndo,onLateCheckIn,checked,justChecked,canCheckYesterday,onCheckYesterday,onGoToSettings}) => (
+const Home = memo(({t,s,onCheckIn,onUndo,onLateCheckIn,checked,justChecked,canCheckYesterday,onCheckYesterday,onGoToSettings}) => {
+  const today = todayStr();
+  return (
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     {justChecked && <Confetti/>}
     {checked ? (
@@ -343,7 +345,8 @@ const Home = memo(({t,s,onCheckIn,onUndo,onLateCheckIn,checked,justChecked,canCh
       <p className="absolute bottom-6 left-0 right-0 text-center z-20 text-white/85 uppercase tracking-[0.3em] text-[10px] font-black">{t.consistency}</p>
     </div>
   </div>
-));
+  );
+});
 
 const Cal = memo(({t,lang,s}) => {
   const now = new Date();
