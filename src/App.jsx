@@ -18,7 +18,7 @@ const T = {
     motto:'"Each morning counts. You\'re getting there."',
     daysActive:"Days Active",timeShifted:"Time Shifted",streakLabel:"Streak",
     goalReached:"🎉 Goal Reached!",goalReachedDesc:"You've reached your target wake time!",
-    onboardingTitle:"Good morning! 🌅",onboardingDesc:"Let's set up your wake-up challenge.",onboardingCurrent:"What time do you wake up now?",onboardingGoal:"What time do you want to wake up?",onboardingBtn:"Start My Challenge →",
+    onboardingTitle:"Good morning! 🌅",onboardingDesc:"Let's set up your wake-up challenge.",onboardingCurrent:"What time do you wake up now?",onboardingGoal:"What time do you want to wake up?",onboardingBtn:"Start My Challenge →",tomorrowGoalPrompt:"Tomorrow's Goal",tomorrowGoalDesc:"Set tomorrow's wake time in Settings",tomorrowGoalBtn:"Go to Settings →",
     months:["January","February","March","April","May","June","July","August","September","October","November","December"],
     daysShort:["S","M","T","W","T","F","S"]
   },
@@ -38,7 +38,7 @@ const T = {
     motto:'"매일 아침이 쌓입니다. 잘 하고 있어요."',
     daysActive:"활성 일수",timeShifted:"앞당긴 시간",streakLabel:"스트릭",
     goalReached:"🎉 목표 달성!",goalReachedDesc:"목표 기상 시간에 도달했습니다!",
-    onboardingTitle:"좋은 아침이에요! 🌅",onboardingDesc:"기상 챌린지를 설정해볼게요.",onboardingCurrent:"지금 보통 몇 시에 일어나요?",onboardingGoal:"목표 기상 시간은 몇 시예요?",onboardingBtn:"챌린지 시작하기 →",
+    onboardingTitle:"좋은 아침이에요! 🌅",onboardingDesc:"기상 챌린지를 설정해볼게요.",onboardingCurrent:"지금 보통 몇 시에 일어나요?",onboardingGoal:"목표 기상 시간은 몇 시예요?",onboardingBtn:"챌린지 시작하기 →",tomorrowGoalPrompt:"내일의 목표",tomorrowGoalDesc:"설정에서 내일 기상 목표를 조정해보세요",tomorrowGoalBtn:"설정으로 가기 →",
     months:["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],
     daysShort:["일","월","화","수","목","금","토"]
   }
