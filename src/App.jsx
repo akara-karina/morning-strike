@@ -7,7 +7,7 @@ const T = {
     today:"Today", calendar:"Calendar", settings:"Settings", challenge:"Challenge",
     todaysGoal:"Today's Goal", checkedIn:"Checked In ✓", awake:"I'm Awake ☀️",
     lateCheckIn:"I Woke Up Late 🌙", lateCheckedIn:"Logged (Late) ◐",
-    undoCheckIn:"Undo check-in",
+    undoCheckIn:"Undo check-in", undoLateCheckIn:"Undo late log",
     yesterdayCheckIn:"Miss yesterday? Check in →",
     daysStreak:"days", consistency:"Consistency is Key", routine:"Morning Routine",
     current:"Current", best:"Best",
@@ -34,7 +34,7 @@ const T = {
     today:"오늘", calendar:"캘린더", settings:"설정", challenge:"챌린지",
     todaysGoal:"오늘의 목표", checkedIn:"체크인 완료 ✓", awake:"일어났어요 ☀️",
     lateCheckIn:"늦게 일어났어요 🌙", lateCheckedIn:"기록됨 (늦잠) ◐",
-    undoCheckIn:"체크인 취소",
+    undoCheckIn:"체크인 취소", undoLateCheckIn:"늦잠 기록 취소",
     yesterdayCheckIn:"어제 체크인 하기 →",
     daysStreak:"일 연속", consistency:"꾸준함이 핵심입니다", routine:"모닝 루틴",
     current:"현재", best:"최고",
@@ -182,6 +182,15 @@ export default function App() {
     setJustChecked(false);
   }, [checked, TODAY]);
 
+  const undoLateCheckIn = useCallback(() => {
+    if (!lateChecked) return;
+    setS(prev => ({
+      ...prev,
+      lateCheckedDays: (prev.lateCheckedDays||[]).filter(d => d !== TODAY)
+    }));
+    setJustChecked(false);
+  }, [lateChecked, TODAY]);
+
   const checkInYesterday = useCallback(() => {
     if (!canCheckYesterday) return;
     const last = s.checkedDays.at(-1);
@@ -229,6 +238,7 @@ export default function App() {
         onCheckIn={checkIn}
         onLateCheckIn={checkInLate}
         onUndo={undoCheckIn}
+        onUndoLate={undoLateCheckIn}
         onCheckYesterday={checkInYesterday}
         onGoToSettings={()=>setTab('settings')}
       />
@@ -263,7 +273,7 @@ const NB = memo(({label,icon,active,onClick}) => (
 ));
 
 // ── Home ──────────────────────────────────────────────────────────────────────
-const Home = memo(({t,s,checked,lateChecked,tooLate,justChecked,canCheckYesterday,onCheckIn,onLateCheckIn,onUndo,onCheckYesterday,onGoToSettings}) => (
+const Home = memo(({t,s,checked,lateChecked,tooLate,justChecked,canCheckYesterday,onCheckIn,onLateCheckIn,onUndo,onUndoLate,onCheckYesterday,onGoToSettings}) => (
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     {justChecked && <Confetti/>}
 
@@ -308,13 +318,18 @@ const Home = memo(({t,s,checked,lateChecked,tooLate,justChecked,canCheckYesterda
       </button>
     </div>
 
-    {/* 체크인 취소 */}
+    {/* 체크인 취소 / 늦잠 취소 */}
     {checked && (
       <button type="button" onClick={onUndo} className="mb-8 px-5 py-2 rounded-full border border-white/10 text-white/70 text-xs font-bold hover:border-red-500/40 hover:text-red-400 transition-all">
         {t.undoCheckIn}
       </button>
     )}
-    {!checked && <div className="mb-8"/>}
+    {lateChecked && (
+      <button type="button" onClick={onUndoLate} className="mb-8 px-5 py-2 rounded-full border border-white/10 text-white/70 text-xs font-bold hover:border-red-500/40 hover:text-red-400 transition-all">
+        {t.undoLateCheckIn}
+      </button>
+    )}
+    {!checked && !lateChecked && <div className="mb-8"/>}
 
     {/* 스트릭 */}
     <div className="flex items-center gap-3 mb-10 bg-white/5 px-6 py-3 rounded-full border border-white/5">
