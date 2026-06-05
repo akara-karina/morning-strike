@@ -4,7 +4,7 @@ import { Calendar as CalendarIcon, Settings as SettingsIcon, CheckCircle2, Flame
 const T = {
   en: {
     today:"Today",calendar:"Calendar",settings:"Settings",challenge:"Challenge",
-    todaysGoal:"Today's Goal",checkedIn:"Checked In ✓",awake:"I'm Awake ☀️",undoCheckIn:"Undo check-in",
+    todaysGoal:"Today's Goal",checkedIn:"Checked In ✓",awake:"I'm Awake ☀️",undoCheckIn:"Undo check-in",yesterdayCheckIn:"Miss yesterday? Check in →",
     daysStreak:"days",consistency:"Consistency is Key",routine:"Morning Routine",
     current:"Current",best:"Best",badges:"Badges Earned",dismiss:"See My Progress →",
     streak3:"3 Day Streak",streak7:"7 Day Streak",mastery14:"14 Day Mastery",
@@ -23,7 +23,7 @@ const T = {
   },
   ko: {
     today:"오늘",calendar:"캘린더",settings:"설정",challenge:"챌린지",
-    todaysGoal:"오늘의 목표",checkedIn:"체크인 완료 ✓",awake:"일어났어요 ☀️",undoCheckIn:"체크인 취소",
+    todaysGoal:"오늘의 목표",checkedIn:"체크인 완료 ✓",awake:"일어났어요 ☀️",undoCheckIn:"체크인 취소",yesterdayCheckIn:"어제 체크인 하기 →",
     daysStreak:"일 연속",consistency:"꾸준함이 핵심입니다",routine:"모닝 루틴",
     current:"현재",best:"최고",badges:"획득한 배지",dismiss:"진행상황 보기 →",
     streak3:"3일 스트릭",streak7:"7일 스트릭",mastery14:"14일 마스터",
@@ -69,8 +69,8 @@ function loadState() {
 }
 function defaultState() {
   return {
-    streak:5, bestStreak:14,
-    checkedDays:['2023-10-02','2023-10-03','2023-10-04','2023-10-05'],
+    streak:0, bestStreak:0,
+    checkedDays:[],
     currentTargetTime:480, ultimateGoalTime:420, startingWakeTime:660,
     compassionateMode:true, lastShiftDate:null, language:'en'
   };
@@ -119,6 +119,23 @@ export default function App() {
     setCelebrate(false);
   }, [s, today]);
 
+  const yesterday = yesterdayStr();
+  const canCheckYesterday = !s.checkedDays.includes(yesterday) && !s.checkedDays.includes(today);
+
+  const checkInYesterday = useCallback(() => {
+    if (!canCheckYesterday) return;
+    setS(prev => ({
+      ...prev,
+      checkedDays: [...prev.checkedDays, yesterday].sort(),
+      streak: prev.streak + 1,
+      bestStreak: Math.max(prev.streak + 1, prev.bestStreak),
+      currentTargetTime: prev.currentTargetTime > prev.ultimateGoalTime
+        ? Math.max(prev.ultimateGoalTime, prev.currentTargetTime - SHIFT)
+        : prev.currentTargetTime,
+      lastShiftDate: yesterday
+    }));
+  }, [canCheckYesterday, yesterday]);
+
   const update = useCallback((patch) => {
     setS(prev => {
       const d = typeof patch === 'function' ? patch(prev) : patch;
@@ -131,7 +148,7 @@ export default function App() {
     if (tab==='calendar') return <Cal t={t} lang={lang} s={s}/>;
     if (tab==='challenge') return <Challenge t={t} lang={lang} s={s}/>;
     if (tab==='settings') return <Sett t={t} lang={lang} s={s} update={update}/>;
-    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} checked={checked}/>;
+    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} checked={checked} canCheckYesterday={canCheckYesterday} onCheckYesterday={checkInYesterday}/>;
   };
 
   return (
@@ -181,7 +198,7 @@ const NB = memo(({label,icon,active,onClick}) => (
   </button>
 ));
 
-const Home = memo(({t,s,onCheckIn,onUndo,checked}) => (
+const Home = memo(({t,s,onCheckIn,onUndo,checked,canCheckYesterday,onCheckYesterday}) => (
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     <h2 className="text-xl font-bold mb-14 text-white/90 tracking-tight">
       {t.todaysGoal}: <span className="text-[#98C1FF]">{fmt(s.currentTargetTime)}</span>
