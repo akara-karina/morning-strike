@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { Calendar as CalendarIcon, Settings as SettingsIcon, CheckCircle2, Flame, ChevronLeft, ChevronRight, ShieldCheck, Trophy, Share2, Clock, Target, TrendingUp } from 'lucide-react';
+import { Calendar as CalendarIcon, Settings as SettingsIcon, CheckCircle2, Flame, ChevronLeft, ChevronRight, ShieldCheck, Trophy, Share2, Target, TrendingUp } from 'lucide-react';
 
 const T = {
   en: {
     today:"Today",calendar:"Calendar",settings:"Settings",challenge:"Challenge",
-    todaysGoal:"Today's Goal",checkedIn:"Checked In ✓",awake:"I'm Awake ☀️",
+    todaysGoal:"Today's Goal",checkedIn:"Checked In ✓",awake:"I'm Awake ☀️",undoCheckIn:"Undo check-in",
     daysStreak:"days",consistency:"Consistency is Key",routine:"Morning Routine",
     current:"Current",best:"Best",badges:"Badges Earned",dismiss:"See My Progress →",
     streak3:"3 Day Streak",streak7:"7 Day Streak",mastery14:"14 Day Mastery",
     keptItUp:"You've kept it up for",morningsThisMonth:"mornings this month.",
-    yourChallenge:"Your Challenge",currentTarget:"Current",ultimateGoal:"Goal",
+    yourChallenge:"Your Challenge",currentTarget:"Tomorrow's Goal",ultimateGoal:"Final Wake Goal",
     shiftMessage:"Morning Streak shifts your target 10 minutes earlier each successful day.",
-    reminders:"Gentle Reminders",nudge:"Morning nudge",nudgeDesc:"A soft reminder near your current target time.",
     streakRules:"Streak Rules",compassionate:"Compassionate mode",compDesc:"Streaks never fully reset. Missing a day pauses, not breaks.",
     saveBtn:"Save My Challenge",saved:"Saved ✓",language:"Language",
     challengeTitle:"My Challenge",stepsCompleted:"steps completed",stepsRemaining:"steps remaining",
@@ -24,14 +23,13 @@ const T = {
   },
   ko: {
     today:"오늘",calendar:"캘린더",settings:"설정",challenge:"챌린지",
-    todaysGoal:"오늘의 목표",checkedIn:"체크인 완료 ✓",awake:"일어났어요 ☀️",
+    todaysGoal:"오늘의 목표",checkedIn:"체크인 완료 ✓",awake:"일어났어요 ☀️",undoCheckIn:"체크인 취소",
     daysStreak:"일 연속",consistency:"꾸준함이 핵심입니다",routine:"모닝 루틴",
     current:"현재",best:"최고",badges:"획득한 배지",dismiss:"진행상황 보기 →",
     streak3:"3일 스트릭",streak7:"7일 스트릭",mastery14:"14일 마스터",
     keptItUp:"이번 달에 총",morningsThisMonth:"번의 아침을 지켜냈어요.",
-    yourChallenge:"나의 챌린지",currentTarget:"현재 목표",ultimateGoal:"최종 목표",
+    yourChallenge:"나의 챌린지",currentTarget:"내일 목표",ultimateGoal:"최종 기상 목표",
     shiftMessage:"성공할 때마다 목표 기상 시간이 10분씩 자동으로 앞당겨집니다.",
-    reminders:"알림 설정",nudge:"기상 넛지",nudgeDesc:"목표 시간 즈음에 부드러운 알림을 보냅니다.",
     streakRules:"스트릭 규칙",compassionate:"컴패셔네이트 모드",compDesc:"스트릭이 완전히 초기화되지 않습니다. 하루를 놓쳐도 끊기지 않고 멈춥니다.",
     saveBtn:"나의 챌린지 저장하기",saved:"저장됨 ✓",language:"언어 설정",
     challengeTitle:"나의 챌린지",stepsCompleted:"단계 완료",stepsRemaining:"단계 남음",
@@ -74,7 +72,7 @@ function defaultState() {
     streak:5, bestStreak:14,
     checkedDays:['2023-10-02','2023-10-03','2023-10-04','2023-10-05'],
     currentTargetTime:480, ultimateGoalTime:420, startingWakeTime:660,
-    nudgeEnabled:true, compassionateMode:true, lastShiftDate:null, language:'en'
+    compassionateMode:true, lastShiftDate:null, language:'en'
   };
 }
 
@@ -109,6 +107,18 @@ export default function App() {
     setCelebrate(true);
   }, [s, today]);
 
+  const undoCheckIn = useCallback(() => {
+    if (!s.checkedDays.includes(today)) return;
+    setS(prev => ({
+      ...prev,
+      checkedDays: prev.checkedDays.filter(d => d !== today),
+      streak: Math.max(0, prev.streak - 1),
+      currentTargetTime: Math.min(prev.currentTargetTime + SHIFT, prev.startingWakeTime),
+      lastShiftDate: null
+    }));
+    setCelebrate(false);
+  }, [s, today]);
+
   const update = useCallback((patch) => {
     setS(prev => {
       const d = typeof patch === 'function' ? patch(prev) : patch;
@@ -121,7 +131,7 @@ export default function App() {
     if (tab==='calendar') return <Cal t={t} lang={lang} s={s}/>;
     if (tab==='challenge') return <Challenge t={t} lang={lang} s={s}/>;
     if (tab==='settings') return <Sett t={t} lang={lang} s={s} update={update}/>;
-    return <Home t={t} s={s} onCheckIn={checkIn} checked={checked}/>;
+    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} checked={checked}/>;
   };
 
   return (
@@ -171,22 +181,29 @@ const NB = memo(({label,icon,active,onClick}) => (
   </button>
 ));
 
-const Home = memo(({t,s,onCheckIn,checked}) => (
+const Home = memo(({t,s,onCheckIn,onUndo,checked}) => (
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     <h2 className="text-xl font-bold mb-14 text-white/90 tracking-tight">
       {t.todaysGoal}: <span className="text-[#98C1FF]">{fmt(s.currentTargetTime)}</span>
     </h2>
-    <div className="relative mb-14">
+    <div className="relative mb-6">
       {!checked && <div className="absolute inset-0 bg-[#3A7BD5] rounded-full blur-[40px] opacity-20 animate-pulse"/>}
       <button type="button" onClick={onCheckIn} disabled={checked}
         className={`w-52 h-52 rounded-full flex items-center justify-center transition-all duration-500 z-10 relative
-          ${checked ? 'bg-gray-800/50 border border-white/10 opacity-60 cursor-not-allowed'
+          ${checked ? 'bg-[#3A7BD5]/20 border-2 border-[#3A7BD5]/40'
           : 'bg-gradient-to-br from-[#98C1FF] to-[#3A7BD5] hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(58,123,213,0.4)]'}`}>
-        <span className={`${checked?'text-white/40':'text-[#1A1A2E]'} font-black text-xl tracking-tight`}>
+        <span className={`${checked?'text-[#3A7BD5]':'text-[#1A1A2E]'} font-black text-xl tracking-tight`}>
           {checked ? t.checkedIn : t.awake}
         </span>
       </button>
     </div>
+    {checked && (
+      <button type="button" onClick={onUndo}
+        className="mb-8 px-5 py-2 rounded-full border border-white/10 text-white/30 text-xs font-bold hover:border-red-500/40 hover:text-red-400 transition-all">
+        {t.undoCheckIn}
+      </button>
+    )}
+    {!checked && <div className="mb-8"/>}
     <div className="flex items-center gap-3 mb-14 bg-white/5 px-6 py-3 rounded-full border border-white/5">
       <Flame className="text-[#F5A623]" size={32} fill="#F5A623"/>
       <span className="text-3xl font-black italic">{s.streak} <span className="text-lg not-italic font-bold text-white/60 ml-1">{t.daysStreak}</span></span>
@@ -261,11 +278,33 @@ const Celebration = memo(({t,lang,s,onClose}) => {
 });
 
 const Cal = memo(({t,lang,s}) => {
-  const now=new Date(), y=now.getFullYear(), m=now.getMonth(), today=todayStr();
-  const fd=new Date(y,m,1).getDay(), dim=new Date(y,m+1,0).getDate();
-  const cset=useMemo(()=>new Set(s.checkedDays),[s.checkedDays]);
-  const prefix=`${y}-${String(m+1).padStart(2,'0')}`;
-  const cnt=s.checkedDays.filter(d=>d.startsWith(prefix)).length;
+  const now = new Date();
+  const today = todayStr();
+  const MIN_YEAR = 2026, MIN_MONTH = 0;
+
+  const [viewY, setViewY] = useState(now.getFullYear());
+  const [viewM, setViewM] = useState(now.getMonth());
+
+  const cset = useMemo(()=>new Set(s.checkedDays),[s.checkedDays]);
+  const prefix = `${viewY}-${String(viewM+1).padStart(2,'0')}`;
+  const cnt = s.checkedDays.filter(d=>d.startsWith(prefix)).length;
+  const fd = new Date(viewY,viewM,1).getDay();
+  const dim = new Date(viewY,viewM+1,0).getDate();
+
+  const isMinMonth = viewY === MIN_YEAR && viewM === MIN_MONTH;
+  const isMaxMonth = viewY === now.getFullYear() && viewM === now.getMonth();
+
+  const goPrev = () => {
+    if (isMinMonth) return;
+    if (viewM === 0) { setViewY(y=>y-1); setViewM(11); }
+    else setViewM(m=>m-1);
+  };
+  const goNext = () => {
+    if (isMaxMonth) return;
+    if (viewM === 11) { setViewY(y=>y+1); setViewM(0); }
+    else setViewM(m=>m+1);
+  };
+
   return (
     <div className="px-6 pt-10 pb-12">
       <div className="mb-6 opacity-60"><h1 className="text-lg font-black tracking-tighter uppercase">{t.routine}</h1></div>
@@ -278,7 +317,29 @@ const Cal = memo(({t,lang,s}) => {
           </div>
         ))}
       </div>
-      <h2 className="text-4xl font-black text-center mb-8 tracking-tighter">{monthLabel(t,lang,y,m)}</h2>
+
+      <div className="flex items-center justify-between mb-6">
+        <button type="button" onClick={goPrev}
+          className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-all"
+          style={{opacity: isMinMonth ? 0.2 : 1, pointerEvents: isMinMonth ? 'none' : 'auto'}}>
+          <ChevronLeft size={20}/>
+        </button>
+        <div className="text-center">
+          <h2 className="text-2xl font-black tracking-tighter">{monthLabel(t,lang,viewY,viewM)}</h2>
+          {!isMaxMonth && (
+            <button type="button" onClick={()=>{setViewY(now.getFullYear()); setViewM(now.getMonth());}}
+              className="text-[10px] text-[#3A7BD5] font-bold mt-1">
+              {lang==='ko' ? '오늘로 이동 →' : 'Go to today →'}
+            </button>
+          )}
+        </div>
+        <button type="button" onClick={goNext}
+          className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-all"
+          style={{opacity: isMaxMonth ? 0.2 : 1, pointerEvents: isMaxMonth ? 'none' : 'auto'}}>
+          <ChevronRight size={20}/>
+        </button>
+      </div>
+
       <div className="bg-white/5 p-6 rounded-[32px] border border-white/5 mb-8">
         <div className="grid grid-cols-7 text-center text-[10px] text-white/30 font-black mb-5 tracking-widest">
           {t.daysShort.map((d,i)=><span key={i}>{d}</span>)}
@@ -286,17 +347,18 @@ const Cal = memo(({t,lang,s}) => {
         <div className="grid grid-cols-7 gap-y-4">
           {Array.from({length:fd}).map((_,i)=><div key={`p${i}`}/>)}
           {Array.from({length:dim},(_,i)=>{
-            const day=i+1, ds=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const ck=cset.has(ds), it=ds===today;
+            const day=i+1, ds=`${viewY}-${String(viewM+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const ck=cset.has(ds), it=ds===today, isFuture=ds>today;
             return <div key={ds} className="flex justify-center">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black
-                ${ck?'bg-[#3A7BD5] text-white':it?'border-2 border-[#3A7BD5] text-[#3A7BD5]':'text-white/60'}`}>
+                ${ck?'bg-[#3A7BD5] text-white':it?'border-2 border-[#3A7BD5] text-[#3A7BD5]':isFuture?'text-white/20':'text-white/60'}`}>
                 {ck?<CheckCircle2 size={17}/>:day}
               </div>
             </div>;
           })}
         </div>
       </div>
+
       <p className="text-center text-lg font-bold text-white/50 mb-8 px-4">
         {t.keptItUp} <span className="text-white font-black text-xl">{cnt}</span> {t.morningsThisMonth}
       </p>
@@ -306,7 +368,6 @@ const Cal = memo(({t,lang,s}) => {
     </div>
   );
 });
-
 const Challenge = memo(({t,lang,s}) => {
   const {currentTargetTime:cur,ultimateGoalTime:goal,startingWakeTime:start,streak,checkedDays} = s;
   const total=Math.round((start-goal)/SHIFT), done=Math.round((start-cur)/SHIFT);
@@ -388,16 +449,7 @@ const Sett = memo(({t,lang,s,update}) => {
         </div>
         <p className="text-xs text-white/30 mt-5 px-2 italic">{t.shiftMessage}</p>
       </section>
-      <section className="mb-8">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-5">{t.reminders}</h3>
-        <div className="bg-white/5 p-6 rounded-[28px] border border-white/5 flex items-center justify-between">
-          <div className="flex gap-4 items-start">
-            <div className="p-3 bg-[#3A7BD5]/10 rounded-2xl text-[#3A7BD5]"><Clock size={20}/></div>
-            <div><p className="font-black mb-1">{t.nudge}</p><p className="text-[11px] text-white/30 max-w-[180px]">{t.nudgeDesc}</p></div>
-          </div>
-          <Tog enabled={s.nudgeEnabled} onToggle={()=>update(prev=>({nudgeEnabled:!prev.nudgeEnabled}))}/>
-        </div>
-      </section>
+
       <section className="mb-10">
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-5">{t.streakRules}</h3>
         <div className="bg-white/5 p-6 rounded-[28px] border border-[#3A7BD5]/20 flex items-center justify-between">
