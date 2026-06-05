@@ -290,15 +290,38 @@ const Home = memo(({t,s,onCheckIn,onUndo,onLateCheckIn,checked,justChecked,canCh
       </h2>
     )}
     <div className="relative mb-6">
-      {!checked && <div className="absolute inset-0 bg-[#3A7BD5] rounded-full blur-[40px] opacity-20 animate-pulse"/>}
-      <button type="button" onClick={onCheckIn} disabled={checked}
-        className={`w-52 h-52 rounded-full flex items-center justify-center transition-all duration-500 z-10 relative
-          ${checked ? 'bg-[#3A7BD5]/20 border-2 border-[#3A7BD5]/40'
-          : 'bg-gradient-to-br from-[#98C1FF] to-[#3A7BD5] hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(58,123,213,0.4)]'}`}>
-        <span className={`${checked?'text-[#3A7BD5]':'text-[#1A1A2E]'} font-black text-xl tracking-tight`}>
-          {checked ? t.checkedIn : t.awake}
-        </span>
-      </button>
+      {(() => {
+        const nowMin = getCurrentTimeInMinutes();
+        const lateChecked = s.lateCheckedDays?.includes(today) || false;
+        const tooLate = !checked && !lateChecked && nowMin > s.currentTargetTime;
+        const isNormal = !checked && !lateChecked && !tooLate;
+        return (
+          <>
+            {isNormal && <div className="absolute inset-0 bg-[#3A7BD5] rounded-full blur-[40px] opacity-20 animate-pulse"/>}
+            {tooLate && <div className="absolute inset-0 bg-[#F5A623] rounded-full blur-[40px] opacity-10"/>}
+            <button type="button"
+              onClick={checked || lateChecked ? undefined : tooLate ? onLateCheckIn : onCheckIn}
+              disabled={checked || lateChecked}
+              className={`w-52 h-52 rounded-full flex flex-col items-center justify-center gap-1 transition-all duration-500 z-10 relative
+                ${checked ? 'bg-[#3A7BD5]/20 border-2 border-[#3A7BD5]/40'
+                : lateChecked ? 'bg-[#F5A623]/10 border-2 border-[#F5A623]/40'
+                : tooLate ? 'bg-gradient-to-br from-[#F5A623] to-[#E08A00] hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(245,166,35,0.4)]'
+                : 'bg-gradient-to-br from-[#98C1FF] to-[#3A7BD5] hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(58,123,213,0.4)]'}`}>
+              <span className={`font-black text-xl tracking-tight
+                ${checked ? 'text-[#3A7BD5]' : lateChecked ? 'text-[#F5A623]' : 'text-[#1A1A2E]'}`}>
+                {checked ? t.checkedIn : lateChecked ? t.lateCheckedIn : tooLate ? t.lateCheckIn : t.awake}
+              </span>
+              {tooLate && <span className="text-[#1A1A2E]/70 text-xs font-bold">🌙</span>}
+              {justChecked && (
+                <span className="absolute -bottom-2 text-[10px] font-black animate-bounce"
+                  style={{color: tooLate || lateChecked ? '#F5A623' : '#3A7BD5'}}>
+                  {lateChecked ? '◐ 기록됨' : '✨ +1'}
+                </span>
+              )}
+            </button>
+          </>
+        );
+      })()}
     </div>
     {checked && (
       <button type="button" onClick={onUndo}
