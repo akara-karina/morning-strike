@@ -132,7 +132,7 @@ const ThumbsUp = memo(({message}) => {
         @keyframes fadeinup{0%{transform:translateY(30px);opacity:0}20%{transform:translateY(0);opacity:1}80%{opacity:1}100%{opacity:0}}
       `}</style>
       {pts.map(p=>(
-        <div key={p.id} style={{position:'absolute',left:`${p.x}%`,bottom:'15%',fontSize:p.size,animation:`thumbrise ${p.dur}s cubic-bezier(0.2,0.8,0.4,1) ${p.delay}s forwards'}}>
+        <div key={p.id} style={{position:'absolute',left:`${p.x}%`,bottom:'15%',fontSize:p.size,animation:`thumbrise ${p.dur}s cubic-bezier(0.2,0.8,0.4,1) ${p.delay}s forwards`}}>
           👍
         </div>
       ))}
