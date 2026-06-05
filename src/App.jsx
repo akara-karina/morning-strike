@@ -104,7 +104,6 @@ export default function App() {
       streak, bestStreak: Math.max(streak, prev.bestStreak),
       currentTargetTime: nextTarget, lastShiftDate: today
     }));
-    setCelebrate(true);
   }, [s, today]);
 
   const undoCheckIn = useCallback(() => {
@@ -139,7 +138,7 @@ export default function App() {
   const update = useCallback((patch) => {
     setS(prev => {
       const d = typeof patch === 'function' ? patch(prev) : patch;
-      return { ...prev, ...d, compassionateMode: true };
+      return { ...prev, ...d };
     });
   }, []);
 
@@ -493,11 +492,14 @@ const Sett = memo(({t,lang,s,update}) => {
 });
 
 const TP = memo(({label,value,onChange}) => (
-  <div className="bg-white/5 p-6 rounded-[28px] border border-white/5 flex flex-col items-center gap-3">
-    <span className="text-[10px] font-black uppercase tracking-widest text-white/30">{label}</span>
-    <button type="button" onClick={()=>onChange(value-SHIFT)} className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
+  <div className="bg-white/5 p-5 rounded-[28px] border border-white/5 flex flex-col items-center gap-2">
+    <span style={{height:32, display:'flex', alignItems:'center', textAlign:'center'}}
+      className="text-[10px] font-black uppercase tracking-widest text-white/30 leading-tight px-1">
+      {label}
+    </span>
+    <button type="button" onClick={()=>onChange(value+SHIFT)} className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
     <div className="text-xl font-black text-[#98C1FF]">{fmt(value)}</div>
-    <button type="button" onClick={()=>onChange(value+SHIFT)} className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
+    <button type="button" onClick={()=>onChange(value-SHIFT)} className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
   </div>
 ));
 
