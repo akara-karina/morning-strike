@@ -18,6 +18,7 @@ const T = {
     motto:'"Each morning counts. You\'re getting there."',
     daysActive:"Days Active",timeShifted:"Time Shifted",streakLabel:"Streak",
     goalReached:"🎉 Goal Reached!",goalReachedDesc:"You've reached your target wake time!",
+    onboardingTitle:"Good morning! 🌅",onboardingDesc:"Let's set up your wake-up challenge.",onboardingCurrent:"What time do you wake up now?",onboardingGoal:"What time do you want to wake up?",onboardingBtn:"Start My Challenge →",
     months:["January","February","March","April","May","June","July","August","September","October","November","December"],
     daysShort:["S","M","T","W","T","F","S"]
   },
@@ -37,6 +38,7 @@ const T = {
     motto:'"매일 아침이 쌓입니다. 잘 하고 있어요."',
     daysActive:"활성 일수",timeShifted:"앞당긴 시간",streakLabel:"스트릭",
     goalReached:"🎉 목표 달성!",goalReachedDesc:"목표 기상 시간에 도달했습니다!",
+    onboardingTitle:"좋은 아침이에요! 🌅",onboardingDesc:"기상 챌린지를 설정해볼게요.",onboardingCurrent:"지금 보통 몇 시에 일어나요?",onboardingGoal:"목표 기상 시간은 몇 시예요?",onboardingBtn:"챌린지 시작하기 →",
     months:["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],
     daysShort:["일","월","화","수","목","금","토"]
   }
@@ -72,13 +74,14 @@ function defaultState() {
     streak:0, bestStreak:0,
     checkedDays:[],
     currentTargetTime:480, ultimateGoalTime:420, startingWakeTime:660,
-    compassionateMode:true, lastShiftDate:null, language:'en'
+    compassionateMode:true, lastShiftDate:null, language:'en', onboarded:false
   };
 }
 
 export default function App() {
   const [tab, setTab] = useState('today');
   const [celebrate, setCelebrate] = useState(false);
+  const [justChecked, setJustChecked] = useState(false);
   const [s, setS] = useState(loadState);
 
   useEffect(() => {
@@ -104,6 +107,8 @@ export default function App() {
       streak, bestStreak: Math.max(streak, prev.bestStreak),
       currentTargetTime: nextTarget, lastShiftDate: today
     }));
+    setJustChecked(true);
+    setTimeout(() => setJustChecked(false), 3000);
   }, [s, today]);
 
   const undoCheckIn = useCallback(() => {
@@ -116,10 +121,11 @@ export default function App() {
       lastShiftDate: null
     }));
     setCelebrate(false);
+    setJustChecked(false);
   }, [s, today]);
 
   const yesterday = yesterdayStr();
-  const canCheckYesterday = !s.checkedDays.includes(yesterday) && !s.checkedDays.includes(today);
+  const canCheckYesterday = !s.checkedDays.includes(yesterday);
 
   const checkInYesterday = useCallback(() => {
     if (!canCheckYesterday) return;
@@ -142,12 +148,23 @@ export default function App() {
     });
   }, []);
 
+  const finishOnboarding = useCallback((currentTime, goalTime) => {
+    setS(prev => ({
+      ...prev,
+      currentTargetTime: currentTime,
+      ultimateGoalTime: goalTime,
+      startingWakeTime: currentTime,
+      onboarded: true
+    }));
+  }, []);
+
   const content = () => {
+    if (!s.onboarded) return <Onboarding t={t} lang={lang} onDone={finishOnboarding}/>;
     if (celebrate) return <Celebration t={t} lang={lang} s={s} onClose={() => { setCelebrate(false); setTab('challenge'); }}/>;
     if (tab==='calendar') return <Cal t={t} lang={lang} s={s}/>;
     if (tab==='challenge') return <Challenge t={t} lang={lang} s={s}/>;
     if (tab==='settings') return <Sett t={t} lang={lang} s={s} update={update}/>;
-    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} checked={checked} canCheckYesterday={canCheckYesterday} onCheckYesterday={checkInYesterday}/>;
+    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} checked={checked} justChecked={justChecked} canCheckYesterday={canCheckYesterday} onCheckYesterday={checkInYesterday}/>;
   };
 
   return (
@@ -166,7 +183,7 @@ export default function App() {
         </div>
 
         {/* 하단 네비 — flex item, 절대 밀리지 않음 */}
-        {!celebrate && (
+        {!celebrate && s.onboarded && (
           <div style={{
             flexShrink:0, background:'#1A1A2E',
             borderTop:'1px solid rgba(255,255,255,0.08)',
@@ -197,7 +214,7 @@ const NB = memo(({label,icon,active,onClick}) => (
   </button>
 ));
 
-const Home = memo(({t,s,onCheckIn,onUndo,checked,canCheckYesterday,onCheckYesterday}) => (
+const Home = memo(({t,s,onCheckIn,onUndo,checked,justChecked,canCheckYesterday,onCheckYesterday}) => (
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     <h2 className="text-xl font-bold mb-14 text-white/90 tracking-tight">
       {t.todaysGoal}: <span className="text-[#98C1FF]">{fmt(s.currentTargetTime)}</span>
@@ -460,7 +477,7 @@ const Sett = memo(({t,lang,s,update}) => {
       <section className="mb-8">
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-5">{t.yourChallenge}</h3>
         <div className="grid grid-cols-2 gap-4">
-          <TP label={t.currentTarget} value={s.currentTargetTime} onChange={v=>update(prev=>({currentTargetTime:clamp(v,prev.ultimateGoalTime+SHIFT,1439)}))} />
+          <TP label={t.currentTarget} value={s.currentTargetTime} onChange={v=>update(prev=>({currentTargetTime:clamp(v,prev.ultimateGoalTime+SHIFT,1439), startingWakeTime:clamp(v,prev.ultimateGoalTime+SHIFT,1439)}))} />
           <TP label={t.ultimateGoal} value={s.ultimateGoalTime} onChange={v=>update(prev=>({ultimateGoalTime:clamp(v,0,prev.currentTargetTime-SHIFT)}))} />
         </div>
         <p className="text-xs text-white/30 mt-5 px-2 italic">{t.shiftMessage}</p>
@@ -502,6 +519,59 @@ const TP = memo(({label,value,onChange}) => (
     <button type="button" onClick={()=>onChange(value-SHIFT)} className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
   </div>
 ));
+
+const Onboarding = memo(({t, lang, onDone}) => {
+  const [currentTime, setCurrentTime] = useState(660); // 11:00 AM
+  const [goalTime, setGoalTime] = useState(420);        // 7:00 AM
+  const clamp = (v,mn,mx) => Math.max(mn, Math.min(mx, v));
+
+  return (
+    <div className="px-8 pt-20 pb-12 flex flex-col items-center min-h-full">
+      <div className="text-5xl mb-6">🌅</div>
+      <h1 className="text-2xl font-black text-center mb-3 tracking-tight">{t.onboardingTitle}</h1>
+      <p className="text-sm text-white/50 text-center mb-12 leading-relaxed">{t.onboardingDesc}</p>
+
+      <div className="w-full grid grid-cols-2 gap-4 mb-10">
+        <div className="bg-white/5 p-5 rounded-[28px] border border-white/5 flex flex-col items-center gap-2">
+          <span style={{height:36, display:'flex', alignItems:'center', textAlign:'center'}}
+            className="text-[10px] font-black uppercase tracking-widest text-white/40 leading-tight px-1">
+            {t.onboardingCurrent}
+          </span>
+          <button type="button" onClick={()=>setCurrentTime(v=>clamp(v+10, goalTime+10, 1439))}
+            className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
+          <div className="text-xl font-black text-[#98C1FF]">{fmt(currentTime)}</div>
+          <button type="button" onClick={()=>setCurrentTime(v=>clamp(v-10, goalTime+10, 1439))}
+            className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
+        </div>
+        <div className="bg-white/5 p-5 rounded-[28px] border border-[#3A7BD5]/20 flex flex-col items-center gap-2">
+          <span style={{height:36, display:'flex', alignItems:'center', textAlign:'center'}}
+            className="text-[10px] font-black uppercase tracking-widest text-white/40 leading-tight px-1">
+            {t.onboardingGoal}
+          </span>
+          <button type="button" onClick={()=>setGoalTime(v=>clamp(v+10, 0, currentTime-10))}
+            className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="-rotate-90"/></button>
+          <div className="text-xl font-black text-[#F5A623]">{fmt(goalTime)}</div>
+          <button type="button" onClick={()=>setGoalTime(v=>clamp(v-10, 0, currentTime-10))}
+            className="text-white/20 hover:text-[#3A7BD5] p-1"><ChevronRight size={22} className="rotate-90"/></button>
+        </div>
+      </div>
+
+      <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/5 mb-10 text-center">
+        <p className="text-xs text-white/40 leading-relaxed">
+          {lang==='ko'
+            ? `${fmt(currentTime)}에서 ${fmt(goalTime)}까지 — 매일 10분씩 앞당겨요`
+            : `${fmt(currentTime)} → ${fmt(goalTime)} — shifting 10 min earlier each day`}
+        </p>
+      </div>
+
+      <button type="button" onClick={()=>onDone(currentTime, goalTime)}
+        className="w-full py-5 bg-[#3A7BD5] text-white font-black rounded-2xl uppercase tracking-widest text-sm">
+        {t.onboardingBtn}
+      </button>
+    </div>
+  );
+});
+
 
 const Tog = memo(({enabled,onToggle,disabled}) => (
   <button type="button" onClick={onToggle} disabled={disabled}
