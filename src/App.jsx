@@ -258,12 +258,12 @@ const Home = memo(({t,s,onCheckIn,onUndo,checked,justChecked,canCheckYesterday,o
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     {justChecked && <Confetti/>}
     {checked ? (
-      <div className="w-full mb-10 bg-[#3A7BD5]/10 rounded-[28px] border border-[#3A7BD5]/40 p-6 flex flex-col items-center gap-3">
-        <p className="text-sm font-black uppercase tracking-widest text-[#3A7BD5]">{t.tomorrowGoalPrompt}</p>
-        <p className="text-[#98C1FF] font-black text-4xl">{fmt(s.currentTargetTime)}</p>
-        <p className="text-base text-white font-bold text-center leading-snug">{t.tomorrowGoalDesc}</p>
+      <div style={{width:'100%', marginBottom:32, background:'rgba(58,123,213,0.15)', borderRadius:24, border:'1.5px solid rgba(58,123,213,0.5)', padding:24, display:'flex', flexDirection:'column', alignItems:'center', gap:10}}>
+        <p style={{fontSize:11, fontWeight:900, letterSpacing:'0.15em', color:'#7EB8FF', textTransform:'uppercase', margin:0}}>{t.tomorrowGoalPrompt}</p>
+        <p style={{fontSize:28, fontWeight:900, color:'#98C1FF', margin:0}}>{fmt(s.currentTargetTime)}</p>
+        <p style={{fontSize:14, fontWeight:700, color:'#FFFFFF', textAlign:'center', lineHeight:1.5, margin:0}}>{t.tomorrowGoalDesc}</p>
         <button type="button" onClick={onGoToSettings}
-          className="mt-2 px-6 py-3 bg-[#3A7BD5] text-white text-sm font-black rounded-full transition-all active:scale-95 shadow-lg">
+          style={{marginTop:6, padding:'10px 24px', background:'#3A7BD5', color:'white', fontSize:13, fontWeight:900, borderRadius:999, border:'none', cursor:'pointer'}}>
           {t.tomorrowGoalBtn}
         </button>
       </div>
