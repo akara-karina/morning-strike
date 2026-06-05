@@ -164,7 +164,7 @@ export default function App() {
     if (tab==='calendar') return <Cal t={t} lang={lang} s={s}/>;
     if (tab==='challenge') return <Challenge t={t} lang={lang} s={s}/>;
     if (tab==='settings') return <Sett t={t} lang={lang} s={s} update={update}/>;
-    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} checked={checked} justChecked={justChecked} canCheckYesterday={canCheckYesterday} onCheckYesterday={checkInYesterday}/>;
+    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} checked={checked} justChecked={justChecked} canCheckYesterday={canCheckYesterday} onCheckYesterday={checkInYesterday} onGoToSettings={()=>setTab('settings')}/>;
   };
 
   return (
@@ -201,6 +201,47 @@ export default function App() {
   );
 }
 
+const CONFETTI_EMOJIS = ['🎉','⭐','✨','🌟','💫','🎊','🔥','💪'];
+
+const Confetti = memo(() => {
+  const particles = useMemo(() => Array.from({length: 16}, (_, i) => ({
+    id: i,
+    emoji: CONFETTI_EMOJIS[i % CONFETTI_EMOJIS.length],
+    x: Math.random() * 100,
+    delay: Math.random() * 0.5,
+    duration: 1.2 + Math.random() * 0.8,
+    size: 20 + Math.floor(Math.random() * 20),
+    rotate: Math.random() * 360,
+  })), []);
+
+  return (
+    <div style={{
+      position:'fixed', top:0, left:0, right:0, bottom:0,
+      pointerEvents:'none', zIndex:9999, overflow:'hidden'
+    }}>
+      {particles.map(p => (
+        <div key={p.id} style={{
+          position:'absolute',
+          left: `${p.x}%`,
+          top: '-10%',
+          fontSize: p.size,
+          animation: `fall ${p.duration}s ease-in ${p.delay}s forwards`,
+        }}>
+          {p.emoji}
+        </div>
+      ))}
+      <style>{`
+        @keyframes fall {
+          0%   { transform: translateY(0) rotate(0deg) scale(0.5); opacity: 1; }
+          60%  { opacity: 1; }
+          100% { transform: translateY(110vh) rotate(${Math.random()*720}deg) scale(1.2); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+});
+
+
 const NB = memo(({label,icon,active,onClick}) => (
   <button type="button" onClick={onClick} style={{
     display:'flex', flexDirection:'column', alignItems:'center', gap:4,
@@ -214,11 +255,24 @@ const NB = memo(({label,icon,active,onClick}) => (
   </button>
 ));
 
-const Home = memo(({t,s,onCheckIn,onUndo,checked,justChecked,canCheckYesterday,onCheckYesterday}) => (
+const Home = memo(({t,s,onCheckIn,onUndo,checked,justChecked,canCheckYesterday,onCheckYesterday,onGoToSettings}) => (
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
-    <h2 className="text-xl font-bold mb-14 text-white/90 tracking-tight">
-      {t.todaysGoal}: <span className="text-[#98C1FF]">{fmt(s.currentTargetTime)}</span>
-    </h2>
+    {justChecked && <Confetti/>}
+    {checked ? (
+      <div className="w-full mb-10 bg-white/5 rounded-[24px] border border-[#3A7BD5]/30 p-5 flex flex-col items-center gap-2">
+        <p className="text-xs font-black uppercase tracking-widest text-[#3A7BD5]/80">{t.tomorrowGoalPrompt}</p>
+        <p className="text-[#98C1FF] font-black text-2xl">{fmt(s.currentTargetTime)}</p>
+        <p className="text-sm text-white/70 text-center leading-snug">{t.tomorrowGoalDesc}</p>
+        <button type="button" onClick={onGoToSettings}
+          className="mt-1 px-5 py-2 bg-[#3A7BD5] text-white text-xs font-black rounded-full transition-all active:scale-95">
+          {t.tomorrowGoalBtn}
+        </button>
+      </div>
+    ) : (
+      <h2 className="text-xl font-bold mb-14 text-white/90 tracking-tight">
+        {t.todaysGoal}: <span className="text-[#98C1FF]">{fmt(s.currentTargetTime)}</span>
+      </h2>
+    )}
     <div className="relative mb-6">
       {!checked && <div className="absolute inset-0 bg-[#3A7BD5] rounded-full blur-[40px] opacity-20 animate-pulse"/>}
       <button type="button" onClick={onCheckIn} disabled={checked}
