@@ -18,7 +18,7 @@ const T = {
     motto:'"Each morning counts. You\'re getting there."',
     daysActive:"Days Active",timeShifted:"Time Shifted",streakLabel:"Streak",
     goalReached:"🎉 Goal Reached!",goalReachedDesc:"You've reached your target wake time!",
-    onboardingTitle:"Good morning! 🌅",onboardingDesc:"Let's set up your wake-up challenge.",onboardingCurrent:"What time do you wake up now?",onboardingGoal:"What time do you want to wake up?",onboardingBtn:"Start My Challenge →",tomorrowGoalPrompt:"Tomorrow's Goal",tooLateMsg:"You've passed today's goal time",tooLateDesc:"Set an earlier goal for tomorrow in Settings",tomorrowGoalDesc:"Set tomorrow's wake time in Settings",tomorrowGoalBtn:"Go to Settings →",
+    onboardingTitle:"Good morning! 🌅",onboardingDesc:"Let's set up your wake-up challenge.",onboardingCurrent:"What time do you wake up now?",onboardingGoal:"What time do you want to wake up?",onboardingBtn:"Start My Challenge →",tomorrowGoalPrompt:"Tomorrow's Goal",tooLateMsg:"You've passed today's goal time",tooLateDesc:"Set an earlier goal for tomorrow in Settings",lateCheckIn:"I woke up late",lateCheckedIn:"Logged (late) ◐",tomorrowGoalDesc:"Set tomorrow's wake time in Settings",tomorrowGoalBtn:"Go to Settings →",
     months:["January","February","March","April","May","June","July","August","September","October","November","December"],
     daysShort:["S","M","T","W","T","F","S"]
   },
@@ -38,7 +38,7 @@ const T = {
     motto:'"매일 아침이 쌓입니다. 잘 하고 있어요."',
     daysActive:"활성 일수",timeShifted:"앞당긴 시간",streakLabel:"스트릭",
     goalReached:"🎉 목표 달성!",goalReachedDesc:"목표 기상 시간에 도달했습니다!",
-    onboardingTitle:"좋은 아침이에요! 🌅",onboardingDesc:"기상 챌린지를 설정해볼게요.",onboardingCurrent:"지금 보통 몇 시에 일어나요?",onboardingGoal:"목표 기상 시간은 몇 시예요?",onboardingBtn:"챌린지 시작하기 →",tomorrowGoalPrompt:"내일의 목표",tooLateMsg:"오늘 목표 시간이 지났어요",tooLateDesc:"내일은 더 일찍 일어날 수 있어요. 설정에서 목표를 조정해보세요",tomorrowGoalDesc:"설정에서 내일 기상 목표를 조정해보세요",tomorrowGoalBtn:"설정으로 가기 →",
+    onboardingTitle:"좋은 아침이에요! 🌅",onboardingDesc:"기상 챌린지를 설정해볼게요.",onboardingCurrent:"지금 보통 몇 시에 일어나요?",onboardingGoal:"목표 기상 시간은 몇 시예요?",onboardingBtn:"챌린지 시작하기 →",tomorrowGoalPrompt:"내일의 목표",tooLateMsg:"오늘 목표 시간이 지났어요",tooLateDesc:"내일은 더 일찍 일어날 수 있어요. 설정에서 목표를 조정해보세요",lateCheckIn:"늦게 일어났어요",lateCheckedIn:"기록됨 (늦잠) ◐",tomorrowGoalDesc:"설정에서 내일 기상 목표를 조정해보세요",tomorrowGoalBtn:"설정으로 가기 →",
     months:["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],
     daysShort:["일","월","화","수","목","금","토"]
   }
@@ -79,7 +79,7 @@ function defaultState() {
     streak:0, bestStreak:0,
     checkedDays:[],
     currentTargetTime:480, ultimateGoalTime:420, startingWakeTime:660,
-    compassionateMode:true, lastShiftDate:null, language:'ko', onboarded:false
+    compassionateMode:true, lastShiftDate:null, language:'ko', onboarded:false, lateCheckedDays:[]
   };
 }
 
@@ -131,6 +131,16 @@ export default function App() {
     setJustChecked(false);
   }, [s, today]);
 
+  const checkInLate = useCallback(() => {
+    if (s.checkedDays.includes(today) || s.lateCheckedDays?.includes(today)) return;
+    setS(prev => ({
+      ...prev,
+      lateCheckedDays: [...(prev.lateCheckedDays || []), today],
+    }));
+    setJustChecked(true);
+    setTimeout(() => setJustChecked(false), 3000);
+  }, [s, today]);
+
   const yesterday = yesterdayStr();
   const canCheckYesterday = !s.checkedDays.includes(yesterday);
 
@@ -171,7 +181,7 @@ export default function App() {
     if (tab==='calendar') return <Cal t={t} lang={lang} s={s}/>;
     if (tab==='challenge') return <Challenge t={t} lang={lang} s={s}/>;
     if (tab==='settings') return <Sett t={t} lang={lang} s={s} update={update}/>;
-    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} checked={checked} justChecked={justChecked} canCheckYesterday={canCheckYesterday} onCheckYesterday={checkInYesterday} onGoToSettings={()=>setTab('settings')}/>;
+    return <Home t={t} s={s} onCheckIn={checkIn} onUndo={undoCheckIn} onLateCheckIn={checkInLate} checked={checked} justChecked={justChecked} canCheckYesterday={canCheckYesterday} onCheckYesterday={checkInYesterday} onGoToSettings={()=>setTab('settings')}/>;
   };
 
   return (
@@ -261,7 +271,7 @@ const NB = memo(({label,icon,active,onClick}) => (
   </button>
 ));
 
-const Home = memo(({t,s,onCheckIn,onUndo,checked,justChecked,canCheckYesterday,onCheckYesterday,onGoToSettings}) => (
+const Home = memo(({t,s,onCheckIn,onUndo,onLateCheckIn,checked,justChecked,canCheckYesterday,onCheckYesterday,onGoToSettings}) => (
   <div className="px-8 pt-16 pb-8 flex flex-col items-center">
     {justChecked && <Confetti/>}
     {checked ? (
@@ -379,6 +389,7 @@ const Cal = memo(({t,lang,s}) => {
   const [viewM, setViewM] = useState(now.getMonth());
 
   const cset = useMemo(()=>new Set(s.checkedDays),[s.checkedDays]);
+  const lset = useMemo(()=>new Set(s.lateCheckedDays||[]),[s.lateCheckedDays]);
   const prefix = `${viewY}-${String(viewM+1).padStart(2,'0')}`;
   const cnt = s.checkedDays.filter(d=>d.startsWith(prefix)).length;
   const fd = new Date(viewY,viewM,1).getDay();
@@ -441,11 +452,11 @@ const Cal = memo(({t,lang,s}) => {
           {Array.from({length:fd}).map((_,i)=><div key={`p${i}`}/>)}
           {Array.from({length:dim},(_,i)=>{
             const day=i+1, ds=`${viewY}-${String(viewM+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const ck=cset.has(ds), it=ds===today, isFuture=ds>today;
+            const ck=cset.has(ds), lk=lset.has(ds), it=ds===today, isFuture=ds>today;
             return <div key={ds} className="flex justify-center">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black
-                ${ck?'bg-[#3A7BD5] text-white':it?'border-2 border-[#3A7BD5] text-[#3A7BD5]':isFuture?'text-white/50':'text-white/85'}`}>
-                {ck?<CheckCircle2 size={17}/>:day}
+                ${ck?'bg-[#3A7BD5] text-white':lk?'border-2 border-[#F5A623] text-[#F5A623]':it?'border-2 border-[#3A7BD5] text-[#3A7BD5]':isFuture?'text-white/20':'text-white/60'}`}>
+                {ck?<CheckCircle2 size={17}/>:lk?'◐':day}
               </div>
             </div>;
           })}
