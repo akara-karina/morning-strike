@@ -27,6 +27,8 @@ const T = {
     onboardingCurrent:"What time do you usually wake up?", onboardingGoal:"What's your goal wake time?",
     onboardingBtn:"Start My Challenge →",
     newGoalBtn:"Set New Goal →",
+    wakeTimeRecord:"Woke up at", lateWakeTimeRecord:"Woke up late at", noRecord:"No record",
+    tapToSee:"Tap a date to see details", closePopup:"Close",
     firstCheckIn:"Your first morning! 🌱 The journey begins.",
     welcomeBack:"Welcome back! 💙 Pick up right where you left off.",
     months:["January","February","March","April","May","June","July","August","September","October","November","December"],
@@ -56,6 +58,8 @@ const T = {
     onboardingCurrent:"지금 보통 몇 시에 일어나요?", onboardingGoal:"목표 기상 시간은 몇 시예요?",
     onboardingBtn:"챌린지 시작하기 →",
     newGoalBtn:"새 목표 설정하기 →",
+    wakeTimeRecord:"기상 시각", lateWakeTimeRecord:"늦잠 기상 시각", noRecord:"기록 없음",
+    tapToSee:"날짜를 탭하면 기록을 볼 수 있어요", closePopup:"닫기",
     firstCheckIn:"첫 번째 기상이에요! 🌱 여정이 시작됐어요.",
     welcomeBack:"다시 오셨군요! 💙 이어서 시작해요.",
     months:["1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"],
@@ -89,7 +93,8 @@ function defaultState() {
   return {
     streak:0, bestStreak:0, checkedDays:[], lateCheckedDays:[],
     currentTargetTime:480, ultimateGoalTime:420, startingWakeTime:480,
-    compassionateMode:true, language:'ko', onboarded:false, lastShiftDate:null, lastOpenDate:null
+    compassionateMode:true, language:'ko', onboarded:false, lastShiftDate:null, lastOpenDate:null,
+    checkInTimes:{}, lateCheckInTimes:{}
   };
 }
 function loadState() {
@@ -211,9 +216,11 @@ export default function App() {
       ? Math.max(s.ultimateGoalTime, s.currentTargetTime - SHIFT)
       : s.currentTargetTime;
     const isFirstEver = s.checkedDays.length === 0 && (s.lateCheckedDays||[]).length === 0;
+    const nowTime = fmt(getNowMinutes());
     setS(prev => ({
       ...prev,
       checkedDays: [...prev.checkedDays, TODAY],
+      checkInTimes: { ...(prev.checkInTimes||{}), [TODAY]: nowTime },
       streak, bestStreak: Math.max(streak, prev.bestStreak),
       currentTargetTime: nextTarget, lastShiftDate: TODAY
     }));
@@ -226,31 +233,43 @@ export default function App() {
 
   const checkInLate = useCallback(() => {
     if (checked || lateChecked) return;
+    const nowTime = fmt(getNowMinutes());
     setS(prev => ({
       ...prev,
-      lateCheckedDays: [...(prev.lateCheckedDays||[]), TODAY]
+      lateCheckedDays: [...(prev.lateCheckedDays||[]), TODAY],
+      lateCheckInTimes: { ...(prev.lateCheckInTimes||{}), [TODAY]: nowTime },
     }));
     flash(true);
   }, [checked, lateChecked, TODAY, flash]);
 
   const undoCheckIn = useCallback(() => {
     if (!checked) return;
-    setS(prev => ({
-      ...prev,
-      checkedDays: prev.checkedDays.filter(d => d !== TODAY),
-      streak: Math.max(0, prev.streak-1),
-      currentTargetTime: Math.min(prev.currentTargetTime+SHIFT, prev.startingWakeTime),
-      lastShiftDate: null
-    }));
+    setS(prev => {
+      const newTimes = { ...(prev.checkInTimes||{}) };
+      delete newTimes[TODAY];
+      return {
+        ...prev,
+        checkedDays: prev.checkedDays.filter(d => d !== TODAY),
+        checkInTimes: newTimes,
+        streak: Math.max(0, prev.streak-1),
+        currentTargetTime: Math.min(prev.currentTargetTime+SHIFT, prev.startingWakeTime),
+        lastShiftDate: null
+      };
+    });
     setJustChecked(false);
   }, [checked, TODAY]);
 
   const undoLateCheckIn = useCallback(() => {
     if (!lateChecked) return;
-    setS(prev => ({
-      ...prev,
-      lateCheckedDays: (prev.lateCheckedDays||[]).filter(d => d !== TODAY)
-    }));
+    setS(prev => {
+      const newTimes = { ...(prev.lateCheckInTimes||{}) };
+      delete newTimes[TODAY];
+      return {
+        ...prev,
+        lateCheckedDays: (prev.lateCheckedDays||[]).filter(d => d !== TODAY),
+        lateCheckInTimes: newTimes,
+      };
+    });
     setJustChecked(false);
     setJustLate(false);
   }, [lateChecked, TODAY]);
@@ -421,8 +440,11 @@ const Cal = memo(({t,lang,s}) => {
   const MIN_YEAR=2026, MIN_MONTH=0;
   const [viewY, setViewY] = useState(now.getFullYear());
   const [viewM, setViewM] = useState(now.getMonth());
+  const [selectedDay, setSelectedDay] = useState(null);
   const cset = useMemo(()=>new Set(s.checkedDays),[s.checkedDays]);
   const lset = useMemo(()=>new Set(s.lateCheckedDays||[]),[s.lateCheckedDays]);
+  const timeMap = s.checkInTimes || {};
+  const lateTimeMap = s.lateCheckInTimes || {};
   const prefix = `${viewY}-${String(viewM+1).padStart(2,'0')}`;
   const cnt = s.checkedDays.filter(d=>d.startsWith(prefix)).length;
   const fd = new Date(viewY,viewM,1).getDay();
@@ -431,8 +453,48 @@ const Cal = memo(({t,lang,s}) => {
   const isMax = viewY===now.getFullYear() && viewM===now.getMonth();
   const goPrev = () => { if(isMin)return; if(viewM===0){setViewY(y=>y-1);setViewM(11);}else setViewM(m=>m-1); };
   const goNext = () => { if(isMax)return; if(viewM===11){setViewY(y=>y+1);setViewM(0);}else setViewM(m=>m+1); };
+  // 팝업에 표시할 날짜 포맷
+  const fmtDay = (ds) => {
+    if (!ds) return '';
+    const [y,m,d] = ds.split('-');
+    return lang==='ko' ? `${m}월 ${parseInt(d)}일` : `${t.months[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
+  };
+
   return (
     <div className="px-6 pt-10 pb-12">
+      {/* 날짜 탭 팝업 */}
+      {selectedDay && (
+        <div
+          style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.5)',backdropFilter:'blur(4px)'}}
+          onClick={()=>setSelectedDay(null)}
+        >
+          <div
+            style={{background:'#1E293B',borderRadius:24,padding:'28px 32px',maxWidth:300,width:'90%',border:'1.5px solid rgba(255,255,255,0.1)'}}
+            onClick={e=>e.stopPropagation()}
+          >
+            <p style={{fontSize:13,fontWeight:900,color:'#8B9DC3',textAlign:'center',marginBottom:16,letterSpacing:'0.08em'}}>{fmtDay(selectedDay)}</p>
+            {cset.has(selectedDay) && (
+              <div style={{background:'rgba(58,123,213,0.15)',borderRadius:16,padding:'16px 20px',marginBottom:timeMap[selectedDay]?0:0,border:'1.5px solid rgba(58,123,213,0.4)'}}>
+                <p style={{fontSize:11,fontWeight:900,color:'#7EB8FF',textTransform:'uppercase',letterSpacing:'0.12em',margin:'0 0 8px 0'}}>{t.wakeTimeRecord}</p>
+                <p style={{fontSize:32,fontWeight:900,color:'#98C1FF',margin:0}}>{timeMap[selectedDay] || '--'}</p>
+              </div>
+            )}
+            {lset.has(selectedDay) && (
+              <div style={{background:'rgba(245,166,35,0.12)',borderRadius:16,padding:'16px 20px',border:'1.5px solid rgba(245,166,35,0.35)'}}>
+                <p style={{fontSize:11,fontWeight:900,color:'#F5A623',textTransform:'uppercase',letterSpacing:'0.12em',margin:'0 0 8px 0'}}>{t.lateWakeTimeRecord}</p>
+                <p style={{fontSize:32,fontWeight:900,color:'#F5A623',margin:0}}>{lateTimeMap[selectedDay] || '--'}</p>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={()=>setSelectedDay(null)}
+              style={{width:'100%',marginTop:20,padding:'12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,color:'rgba(255,255,255,0.6)',fontSize:12,fontWeight:700,cursor:'pointer'}}
+            >
+              {t.closePopup}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mb-6"><h1 className="text-lg font-black tracking-tighter uppercase text-white/90">{t.routine}</h1></div>
       <div className="grid grid-cols-2 gap-4 mb-8">
         {[{icon:<Flame size={20} className="text-[#F5A623]" fill="#F5A623"/>,val:s.streak,lbl:t.current},
@@ -464,15 +526,20 @@ const Cal = memo(({t,lang,s}) => {
           {Array.from({length:dim},(_,i)=>{
             const day=i+1, ds=`${viewY}-${String(viewM+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
             const ck=cset.has(ds), lk=lset.has(ds), it=ds===TODAY, fut=ds>TODAY;
+            const hasRecord = ck || lk;
             return <div key={ds} className="flex justify-center">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black
-                ${ck?'bg-[#3A7BD5] text-white':lk?'border-2 border-[#F5A623] text-[#F5A623]':it?'border-2 border-[#3A7BD5] text-[#3A7BD5]':fut?'text-white/20':'text-white/60'}`}>
+              <div
+                onClick={()=>hasRecord && setSelectedDay(ds)}
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black transition-transform
+                  ${hasRecord ? 'cursor-pointer active:scale-90' : ''}
+                  ${ck?'bg-[#3A7BD5] text-white':lk?'border-2 border-[#F5A623] text-[#F5A623]':it?'border-2 border-[#3A7BD5] text-[#3A7BD5]':fut?'text-white/20':'text-white/60'}`}>
                 {ck?<CheckCircle2 size={17}/>:lk?'◐':day}
               </div>
             </div>;
           })}
         </div>
       </div>
+      <p className="text-center text-xs text-white/40 font-bold mb-3">{t.tapToSee}</p>
       <p className="text-center text-lg font-bold text-white/80 mb-8 px-4">
         {t.keptItUp} <span className="text-white font-black text-xl">{cnt}</span> {t.morningsThisMonth}
       </p>
